@@ -47,18 +47,18 @@ Statements *Parser::suite(){
     //<suite> -> NEWLINE INDENT <statements> DEDENT
     Token newline = tokenizer.getToken();
     if (!newline.isNewline()) {
-        die("Parser::statements", "expected NEWLINE after statement", newline);
+        die("Parser::suite", "expected NEWLINE after statement", newline);
     } 
     Token indent = tokenizer.getToken();
     if (!indent.isIndent()) {
-        die("Parser::statements", "expected indent", indent);
+        die("Parser::suite", "expected indent", indent);
     }
     Statements *loopBody = statements();
 
     Token dedent = tokenizer.getToken();
     if (!dedent.isDedent()){
         delete loopBody;
-        die("Parser::statements", "expected dedent", dedent);
+        die("Parser::suite", "expected dedent", dedent);
     }
     return loopBody;
 }
@@ -77,7 +77,7 @@ Statement *Parser::statement() {
         Token newline = tokenizer.getToken();
         if (!newline.isNewline()) {
             delete simple;
-            die("Parser::statements", "expected NEWLINE after simple statement", newline);
+            die("Parser::statement", "expected NEWLINE after simple statement", newline);
         }
         return simple;
     }
@@ -85,7 +85,7 @@ Statement *Parser::statement() {
         tokenizer.ungetToken();
         return compoundStatement();
     }
-    die("Parser::statements","expected a statement",token);
+    die("Parser::statement","expected a statement",token);
 }
 
 Statement *Parser::simpleStatement() {
