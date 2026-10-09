@@ -26,6 +26,12 @@ private:
     std::size_t columnNumber{1};
     bool lineContainsToken{false};
 
+    bool atBeginningOfLine{true};
+    bool pendingIndent{false};
+    int pendingDedents{0};
+    std::vector<std::size_t> indentationLevels{0};
+    void processBeginningOfLine();
+
     bool getCharacter(char &character);
     std::string readIdentifier(char firstCharacter);
     int readInteger(char firstDigit);

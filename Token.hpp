@@ -48,6 +48,11 @@ public:
     [[nodiscard]] bool isLessOrEqualToOperator() const { return _symbol == "<="; }
     [[nodiscard]] bool isGreaterOrEqualToOperator() const { return _symbol == ">="; }
 
+    [[nodiscard]] bool isIndent() const { return _indent; }
+    [[nodiscard]] bool isDedent() const { return _dedent; }
+    void markAsIndent() { _indent = true; }
+    void markAsDedent() { _dedent = true;}
+
 
     void setIdentifier(std::string identifier) { _identifier = std::move(identifier); }
     [[nodiscard]] bool isIdentifier() const { return !_identifier.empty(); }
@@ -74,6 +79,8 @@ private:
     bool _eof{false};
     bool _newline{false};
     bool _isInteger{false};
+    bool _indent{false};
+    bool _dedent{false};
     std::string _symbol{'\0'};
     int _integerValue{0};
     std::size_t _lineNumber{0};

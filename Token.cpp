@@ -5,6 +5,10 @@
 void Token::print(std::ostream &output) const {
     if (isNewline())
         output << "NEWLINE";
+    else if (isIndent())
+        output << "INDENT";
+    else if (isDedent())
+        output << "DEDENT";
     else if (isEof())
         output << "EOF";
     else if (isForKeyword())

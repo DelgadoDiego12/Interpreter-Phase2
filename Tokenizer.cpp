@@ -69,10 +69,90 @@ int Tokenizer::readInteger(char firstDigit) {
 
 Tokenizer::Tokenizer(std::ifstream &stream) : inputStream{stream} {}
 
+void Tokenizer::processBeginningOfLine() {
+    while (atBeginningOfLine && inputStream.peek() != std::char_traits<char>::eof()) {
+        std::size_t spaces = 0;
+
+        while (inputStream.peek() == ' ') {
+            char character;
+            getCharacter(character);
+            ++spaces;
+        }
+        if (inputStream.peek() == '\t') {
+            std::cerr << "Tabs are not permitted as indentations at line " << lineNumber << ".\n";
+            std::exit(EXIT_FAILURE);
+        }
+        if (inputStream.peek() == '\n') {
+            char character;
+            getCharacter(character);
+            continue;
+        }
+        if (inputStream.peek() == std::char_traits<char>::eof()) {
+            return;
+        }
+        std::size_t currentIndent = indentationLevels.back();
+
+        if (spaces > currentIndent) {
+            indentationLevels.push_back(spaces);
+            pendingIndent = true;
+        } else if (spaces < currentIndent) {
+            while (indentationLevels.size() > 1 && spaces < indentationLevels.back()) {
+                indentationLevels.pop_back();
+                ++pendingDedents;
+            }
+            if (spaces != indentationLevels.back()) {
+                std::cerr << "Invalid indentation at line " << lineNumber << ", indentation does not match a previous level.\n";
+                std::exit(EXIT_FAILURE);
+            }
+        }
+        atBeginningOfLine = false;
+    }
+}
+
 Token Tokenizer::getToken() {
     if (ungottenToken) {
         ungottenToken = false;
         return lastToken;
+    }
+
+    if (pendingIndent) {
+        pendingIndent = false;
+        Token token;
+        token.setLocation(lineNumber, 1);
+        token.markAsIndent();
+        tokens.push_back(token);
+        return lastToken = token;
+    }
+
+    if (pendingDedents > 0) {
+        --pendingDedents;
+        Token token;
+        token.setLocation(lineNumber, 1);
+        token.markAsDedent();
+        tokens.push_back(token);
+        return lastToken = token;
+    }
+
+    if (atBeginningOfLine) {
+        processBeginningOfLine();
+
+        if (pendingIndent) {
+            pendingIndent = false;
+            Token token;
+            token.setLocation(lineNumber, 1);
+            token.markAsIndent();
+            tokens.push_back(token);
+            return lastToken = token;
+        }
+
+        if (pendingDedents > 0) {
+            --pendingDedents;
+            Token token;
+            token.setLocation(lineNumber, 1);
+            token.markAsDedent();
+            tokens.push_back(token);
+            return lastToken = token;
+        }
     }
 
     while (inputStream.peek() != std::char_traits<char>::eof()) {
@@ -93,69 +173,106 @@ Token Tokenizer::getToken() {
                 token.setLocation(newlineLine, newlineColumn);
                 token.markAsNewline();
                 lineContainsToken = false;
+                atBeginningOfLine = true;
                 tokens.push_back(token);
                 return lastToken = token;
             }
+            atBeginningOfLine = true;
+            processBeginningOfLine();
 
-            // Newlines on blank or whitespace-only lines are insignificant.
+            if (pendingIndent) {
+                pendingIndent = false;
+                Token token;
+                token.setLocation(lineNumber, 1);
+                token.markAsIndent();
+                tokens.push_back(token);
+                return lastToken = token;
+            }
+            if (pendingDedents > 0) {
+                --pendingDedents;
+                Token token;
+                token.setLocation(lineNumber, 1);
+                token.markAsDedent();
+                tokens.push_back(token);
+                return lastToken = token;
+            }
             continue;
         }
 
         break;
     }
 
-    Token token;
-    token.setLocation(lineNumber, columnNumber);
-
     if (inputStream.peek() == std::char_traits<char>::eof()) {
         if (inputStream.bad()) {
             std::cerr << "Error while reading the input stream in Tokenizer.\n";
             std::exit(EXIT_FAILURE);
         }
+        if (lineContainsToken) {
+            Token token;
+            token.setLocation(lineNumber, columnNumber);
+            token.markAsNewline();
+            lineContainsToken = false;
+            tokens.push_back(token);
+            return lastToken = token;
+        }
+        if (indentationLevels.size() > 1) {
+            indentationLevels.pop_back();
+            Token token;
+            token.setLocation(lineNumber, columnNumber);
+            token.markAsDedent();
+            tokens.push_back(token);
+            return lastToken = token;
+        }
+
+        Token token;
+        token.setLocation(lineNumber, columnNumber);
         token.markAsEof();
+
+        tokens.push_back(token);
+        return lastToken = token;
+    }
+    Token token;
+    token.setLocation(lineNumber, columnNumber);
+
+    char character;
+    getCharacter(character);
+    char nextChar = static_cast<char>(inputStream.peek());
+
+    if (isDigit(character)) {
+        token.setIntegerValue(readInteger(character));
+    }
+    else if ((character == '=' || character == '!' || character == '<' || character == '>') && (nextChar == '=')){
+        getCharacter(nextChar);
+        std::string twoChar = ""; //creating string for 2 character operators
+        twoChar = character;
+        twoChar += nextChar;
+        token.setSymbol(twoChar);
+    }
+    else if (character == '=' || character == '+' || character == '-' ||
+            character == '*' || character == '/' || character == '%' ||
+            character == ';' || character == '(' || character == ')' ||
+            character == '>' || character == '<' || character == '{' ||
+            character == '}'){
+        std::string oneChar = "";
+        oneChar = character; //to convert char to string
+        token.setSymbol(oneChar);
+            }
+    else if (isIdentifierStart(character)) {
+        std::string identifier = readIdentifier(character);
+        if (identifier == "for")
+            token.setKeyword(Keyword::forKeyword);
+        else if (identifier == "print")
+            token.setKeyword(Keyword::printKeyword);
+        else
+            token.setIdentifier(std::move(identifier));
     } else {
-        char character;
-        getCharacter(character);
-        char nextChar = static_cast<char>(inputStream.peek()); //peek at the next character
-
-        if (isDigit(character)) {
-            token.setIntegerValue(readInteger(character));
-        } 
-        else if ((character == '=' || character == '!' || character == '<' || character == '>') && (nextChar == '=')){
-            getCharacter(nextChar); 
-            std::string twoChar = ""; //creating string for 2 character operators
-            twoChar = character;
-            twoChar += nextChar; 
-            token.setSymbol(twoChar);
-        }
-        else if (character == '=' || character == '+' || character == '-' ||
-                   character == '*' || character == '/' || character == '%' ||
-                   character == ';' || character == '(' || character == ')' ||
-                   character == '>' || character == '<' || character == '{' || 
-                   character == '}'){
-            std::string oneChar = "";
-            oneChar = character; //to convert char to string
-            token.setSymbol(oneChar);
-        } 
-        else if (isIdentifierStart(character)) {
-            std::string identifier = readIdentifier(character);
-            if (identifier == "for")
-                token.setKeyword(Keyword::forKeyword);
-            else if (identifier == "print")
-                token.setKeyword(Keyword::printKeyword);
-            else
-                token.setIdentifier(std::move(identifier));
-        } 
-        else {
-            std::cerr << "Unknown character in input at line " << token.lineNumber()
-                      << ", column " << token.columnNumber() << ": '"
-                      << character << "'.\n";
-            std::exit(EXIT_FAILURE);
-        }
-
-        lineContainsToken = true;
+        std::cerr << "Unknown character in input at line " << token.lineNumber()
+                  << ", column " << token.columnNumber() << ": '"
+                  << character << "'.\n";
+        std::exit(EXIT_FAILURE);
     }
 
+    lineContainsToken = true;
     tokens.push_back(token);
     return lastToken = token;
 }
