@@ -31,29 +31,17 @@ Statements *Parser::statements() {
     auto *parsedStatements = new Statements();
     parsedStatements->addStatement(statement());
     
-    Token newline = tokenizer.getToken();
-    if (!newline.isNewline()) {
-        delete parsedStatements;
-        die("Parser::statements", "expected NEWLINE after statement", newline);
-    } 
-
     Token next = tokenizer.getToken();
-    while (next.isIdentifier() || next.isKeyword()) {
+
+    while (next.isIdentifier() || next.isPrintKeyword() || next.isForKeyword()) {
         tokenizer.ungetToken();
         parsedStatements->addStatement(statement());
-
-        newline = tokenizer.getToken();
-        if (!newline.isNewline()) {
-            delete parsedStatements;
-            die("Parser::statements", "expected NEWLINE after statement", newline);
-        }
-
         next = tokenizer.getToken();
     }
-
     tokenizer.ungetToken();
     return parsedStatements;
 }
+
 
 Statements *Parser::suite(){
     //<suite> -> NEWLINE INDENT <statements> DEDENT
@@ -69,6 +57,7 @@ Statements *Parser::suite(){
 
     Token dedent = tokenizer.getToken();
     if (!dedent.isDedent()){
+        delete loopBody;
         die("Parser::statements", "expected dedent", dedent);
     }
     return loopBody;
@@ -78,14 +67,17 @@ Statement *Parser::statement() {
     // <statement> -> <simple-statement> NEWLINE
     //             | <compound-statement>
     
-    Token token = tokenizer.getToken();
+   Token token = tokenizer.getToken();
+
     if (token.isIdentifier() || token.isPrintKeyword()) {
         tokenizer.ungetToken();
+
         Statement *simple = simpleStatement();
 
-        Token newlineToken = tokenizer.getToken();
-        if (!newlineToken.isNewline()) {
-        die("Parser::forStatement", "expected NEWLINE after '{'", newlineToken);
+        Token newline = tokenizer.getToken();
+        if (!newline.isNewline()) {
+            delete simple;
+            die("Parser::statements", "expected NEWLINE after simple statement", newline);
         }
         return simple;
     }
@@ -93,7 +85,7 @@ Statement *Parser::statement() {
         tokenizer.ungetToken();
         return compoundStatement();
     }
-    die("Parser::statement", "expected a statement", token);
+    die("Parser::statements","expected a statement",token);
 }
 
 Statement *Parser::simpleStatement() {
@@ -108,6 +100,7 @@ Statement *Parser::simpleStatement() {
         tokenizer.ungetToken();
         return printStatement();
     }
+    die("Parser::simpleStatement", "expected assignment or print statement", token);
 
 }
 
@@ -192,38 +185,18 @@ ForStatement *Parser::forStatement() {
     if (!inToken.isInKeyword()){
         die("Parser::forStatement", "expected 'in'", inToken);
     }
-    Token rangeToken = tokenizer.getToken();
-    if (!rangeToken.isRangeKeyword()) {
-        die("Parser::forStatement", "expected 'range'", rangeToken);
-    }
-    tokenizer.ungetToken();
     RangeExpression *range = rangeExpression();
 
     Token colonToken = tokenizer.getToken();
     if (!colonToken.isColon()) {
-        die ("Parser::forStatement", "expected ' : '", colonToken);
+        delete range;
+        die("Parser::forStatement", "expected ':'", colonToken);
     }
 
-    Token newlineToken = tokenizer.getToken();
-    if (!newlineToken.isNewline()) {
-        die("Parser::forStatement", "expected NEWLINE after '{'", newlineToken);
-    }
-    //suite
-    /*
     Statements *loopBody = suite();
-    once that's in no need for the stuff under here
-    */
-    Token indentToken = tokenizer.getToken();
-    if (!indentToken.isIndent()) {
-        die("Parser::forStatement", "expected an indented block", indentToken);
-    }
-    Statements *loopBody = statements();
-    Token dedentToken = tokenizer.getToken();
-    if (!dedentToken.isDedent()) {
-        die("Parser::forStatement", "expected an indented block", dedentToken);
-    }
 
-    return new ForStatement(variable.identifier(), range, loopBody);
+    return new ForStatement(variable.identifier(),range, loopBody);
+
 }
 
 ExprNode *Parser::relExpr() {
