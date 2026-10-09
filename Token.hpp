@@ -9,7 +9,9 @@
 enum class Keyword {
     none,
     forKeyword,
-    printKeyword
+    printKeyword,
+    inKeyword,
+    rangeKeyword
 };
 
 class Token {
@@ -30,7 +32,7 @@ public:
     [[nodiscard]] std::string symbol() const { return _symbol; }
 
     [[nodiscard]] bool isOpenParen() const { return _symbol == "("; }
-    [[nodiscard]] bool isCloseParen() const { return _symbol == ")"; } 
+    [[nodiscard]] bool isCloseParen() const { return _symbol == ")"; }
     [[nodiscard]] bool isSemicolon() const { return _symbol == ";"; }
     [[nodiscard]] bool isAssignmentOperator() const { return _symbol == "="; }
     [[nodiscard]] bool isMultiplicationOperator() const { return _symbol == "*"; }
@@ -48,10 +50,13 @@ public:
     [[nodiscard]] bool isLessOrEqualToOperator() const { return _symbol == "<="; }
     [[nodiscard]] bool isGreaterOrEqualToOperator() const { return _symbol == ">="; }
 
+    [[nodiscard]] bool isColon() const { return _symbol == ":"; }
+    [[nodiscard]] bool isComma() const { return _symbol == ","; }
     [[nodiscard]] bool isIndent() const { return _indent; }
     [[nodiscard]] bool isDedent() const { return _dedent; }
     void markAsIndent() { _indent = true; }
     void markAsDedent() { _dedent = true;}
+
 
 
     void setIdentifier(std::string identifier) { _identifier = std::move(identifier); }
@@ -62,6 +67,8 @@ public:
     [[nodiscard]] bool isKeyword() const { return _keyword != Keyword::none; }
     [[nodiscard]] bool isForKeyword() const { return _keyword == Keyword::forKeyword; }
     [[nodiscard]] bool isPrintKeyword() const { return _keyword == Keyword::printKeyword; }
+    [[nodiscard]] bool isInKeyword() const { return _keyword == Keyword::inKeyword; } //
+    [[nodiscard]] bool isRangeKeyword() const { return _keyword == Keyword::rangeKeyword; } //
     [[nodiscard]] Keyword keyword() const { return _keyword; }
 
     void setIntegerValue(int value) {

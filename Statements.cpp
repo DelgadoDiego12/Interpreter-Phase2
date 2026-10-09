@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 #include <utility>
-
+#include <stdexcept>
 #include "Statements.hpp"
 
 Statements::~Statements() {
@@ -44,7 +44,7 @@ void AssignmentStatement::print() const {
 
 void AssignmentStatement::otherPrint() const {
     std::cout << variableName << " = ";
-    expression->print();    
+    expression->print();
 }
 
 PrintStatement::PrintStatement(ExprNode *expression) : expression{expression} {}
@@ -63,16 +63,37 @@ void PrintStatement::print() const {
     std::cout << '\n';
 }
 
-ForStatement::ForStatement(AssignmentStatement *initialization, ExprNode *condition, AssignmentStatement *assignment, Statements *loopBody) 
-    : initialization{initialization}, condition{condition}, assignment{assignment}, loopBody{loopBody} {}
+ForStatement::ForStatement(std::string variableName, RangeExpression *rangeExpression, Statements *loopBody) : variableName{std::move(variableName)}, rangeExpression{rangeExpression}, loopBody{loopBody} {}
+
+//ForStatement::ForStatement(AssignmentStatement *initialization, ExprNode *condition, AssignmentStatement *assignment, Statements *loopBody)
+//    : initialization{initialization}, condition{condition}, assignment{assignment}, loopBody{loopBody} {}
 
 ForStatement::~ForStatement() {
+    delete rangeExpression;
+    delete loopBody;
+}
+
+/*
+ ForStatement::~ForStatement() {
     delete initialization;
     delete condition;
     delete assignment;
     delete loopBody;
 }
+*/
 
+void ForStatement::evaluate(SymbolTable &symbolTable) const {
+
+    EvaluatedRange range = rangeExpression->evaluate(symbolTable);
+    int iterator = range.start();
+    while (range.shouldContinue(iterator)) {
+        symbolTable.setValueFor(variableName, iterator);
+        loopBody->evaluate(symbolTable);
+        iterator += range.step();
+    }
+}
+
+/*
 void ForStatement::evaluate(SymbolTable &symbolTable) const {
     initialization->evaluate(symbolTable); //initialization assignment statement gets evaluated once
     while (condition->evaluate(symbolTable) !=0 ) { // while condition doesn't equal zero
@@ -80,7 +101,15 @@ void ForStatement::evaluate(SymbolTable &symbolTable) const {
         assignment->evaluate(symbolTable); //updates the assignment statement
     }
 }
+*/
 
+void ForStatement::print() const {
+    std::cout << "for " << variableName << " in ";
+    rangeExpression->print();
+    loopBody->print();
+}
+
+/*
 void ForStatement::print() const {
     std::cout << "for (";
     initialization->otherPrint();
@@ -92,3 +121,4 @@ void ForStatement::print() const {
     loopBody->print();
     std::cout << " }\n";
 }
+*/

@@ -27,54 +27,86 @@ Statements *Parser::program() {
 }
 
 Statements *Parser::statements() {
-    // <statements> -> <statement> NEWLINE { <statement> NEWLINE }
+    // new version <statements> -> <statement> { <statement> }
     auto *parsedStatements = new Statements();
     parsedStatements->addStatement(statement());
 
-    Token newline = tokenizer.getToken();
-    if (!newline.isNewline()) {
-        delete parsedStatements;
-        die("Parser::statements", "expected NEWLINE after statement", newline);
-    }
-
     Token next = tokenizer.getToken();
-    while (next.isIdentifier() || next.isKeyword()) {
+
+    while (next.isIdentifier() || next.isPrintKeyword() || next.isForKeyword()) {
         tokenizer.ungetToken();
         parsedStatements->addStatement(statement());
-
-        newline = tokenizer.getToken();
-        if (!newline.isNewline()) {
-            delete parsedStatements;
-            die("Parser::statements", "expected NEWLINE after statement", newline);
-        }
-
         next = tokenizer.getToken();
     }
-
     tokenizer.ungetToken();
     return parsedStatements;
 }
 
-Statement *Parser::statement() {
-    // <statement> -> <for-statement>
-    //             | <assignment-statement>
-    //             | <print-statement>
-    Token token = tokenizer.getToken();
 
-    if (token.isIdentifier()) {
+Statements *Parser::suite(){
+    //<suite> -> NEWLINE INDENT <statements> DEDENT
+    Token newline = tokenizer.getToken();
+    if (!newline.isNewline()) {
+        die("Parser::suite", "expected NEWLINE after statement", newline);
+    }
+    Token indent = tokenizer.getToken();
+    if (!indent.isIndent()) {
+        die("Parser::suite", "expected indent", indent);
+    }
+    Statements *loopBody = statements();
+
+    Token dedent = tokenizer.getToken();
+    if (!dedent.isDedent()){
+        delete loopBody;
+        die("Parser::suite", "expected dedent", dedent);
+    }
+    return loopBody;
+}
+
+Statement *Parser::statement() {
+    // <statement> -> <simple-statement> NEWLINE
+    //             | <compound-statement>
+
+   Token token = tokenizer.getToken();
+
+    if (token.isIdentifier() || token.isPrintKeyword()) {
         tokenizer.ungetToken();
-        return assignmentStatement();
+
+        Statement *simple = simpleStatement();
+
+        Token newline = tokenizer.getToken();
+        if (!newline.isNewline()) {
+            delete simple;
+            die("Parser::statement", "expected NEWLINE after simple statement", newline);
+        }
+        return simple;
     }
     if (token.isForKeyword()) {
         tokenizer.ungetToken();
-        return forStatement();
+        return compoundStatement();
+    }
+    die("Parser::statement","expected a statement",token);
+}
+
+Statement *Parser::simpleStatement() {
+    //<simple-statement> -> <assignment-statement>
+    //                     | <print-statement>
+    Token token = tokenizer.getToken();
+    if (token.isIdentifier()) {
+        tokenizer.ungetToken();
+        return assignmentStatement();
     }
     if (token.isPrintKeyword()) {
         tokenizer.ungetToken();
         return printStatement();
     }
+    die("Parser::simpleStatement", "expected assignment or print statement", token);
 
-    die("Parser::statement", "expected a statement", token);
+}
+
+Statement *Parser::compoundStatement() {
+    //<compound-statement> -> <for-statement>
+    return forStatement();
 }
 
 AssignmentStatement *Parser::assignmentStatement() {
@@ -101,66 +133,70 @@ PrintStatement *Parser::printStatement() {
     return new PrintStatement(relExpr());
 }
 
-ForStatement *Parser::forStatement() {
-    // <for-statement> -> for ( <assignment-statement> ; <real-expr> ; <assignment-statement> ) { NEWLINE <statements> }
-    Token forToken = tokenizer.getToken();
-    if (!forToken.isForKeyword()) {
-        die ("Parser::forStatement", "expected 'for'", forToken);
+RangeExpression *Parser::rangeExpression() {
+    // <range> -> "range" "(" <range-arguments> ")"
+    Token rangeToken = tokenizer.getToken();
+    if (!rangeToken.isRangeKeyword()) {
+        die("Parser::rangeExpression", "expected 'range'", rangeToken);
     }
     Token openParenToken = tokenizer.getToken();
     if (!openParenToken.isOpenParen()){
         die ("Parser::forStatement", "expected ' ( '", openParenToken);
     }
+    ExprNode *firstArg = relExpr();
+    ExprNode *secondArg = nullptr;
+    ExprNode *thirdArg = nullptr;
 
-    AssignmentStatement *initialization = assignmentStatement();
+    Token next = tokenizer.getToken(); //to check what version of range is being used
+    if (next.isComma()) {
+        secondArg = relExpr();
+        next = tokenizer.getToken();
+        if (next.isComma()) {
+            thirdArg = relExpr();
+            next = tokenizer.getToken();
+        }
+    }
+    if (!next.isCloseParen()) {
+        delete firstArg;
+        delete secondArg;
+        delete thirdArg;
+        die("Parser::rangeStatement", "expected ')'", next);
+    }
+    if (thirdArg != nullptr) {
+        return new RangeExpression(firstArg, secondArg, thirdArg);
+    }
+    if (secondArg != nullptr) {
+        return new RangeExpression(firstArg, secondArg);
+    }
+    return new RangeExpression(firstArg);
+}
 
-    // <assignment-statement> the initialization statement
-    Token firstSemicolonToken = tokenizer.getToken();
-    if (!firstSemicolonToken.isSemicolon()) {
-        die ("Parser::forStatement", "expected ' ; '", firstSemicolonToken);
+ForStatement *Parser::forStatement() {
+    // <for-statement> -> for <id> in <range> : <suite>
+    Token forToken = tokenizer.getToken();
+    if (!forToken.isForKeyword()) {
+        die ("Parser::forStatement", "expected 'for'", forToken);
+    }
+    Token variable = tokenizer.getToken();
+    if (!variable.isIdentifier())
+        die("Parser::forStatement", "expected an identifier", variable);
+
+    Token inToken = tokenizer.getToken();
+    if (!inToken.isInKeyword()){
+        die("Parser::forStatement", "expected 'in'", inToken);
+    }
+    RangeExpression *range = rangeExpression();
+
+    Token colonToken = tokenizer.getToken();
+    if (!colonToken.isColon()) {
+        delete range;
+        die("Parser::forStatement", "expected ':'", colonToken);
     }
 
-    ExprNode *condition = relExpr();
+    Statements *loopBody = suite();
 
-    //<real-expr> the relational condition that continues while it evaluates to nonzero value, reevaluate for every iteration
-    //under a loop while condition != 0?
-    Token secondSemicolonToken = tokenizer.getToken();
-    if (!secondSemicolonToken.isSemicolon()) {
-        die ("Parser::forStatement", "expected ' ; '", secondSemicolonToken);
+    return new ForStatement(variable.identifier(),range, loopBody);
 
-    }
-
-    AssignmentStatement *assignment = assignmentStatement();
-
-    //<assignment-statement> update after every iteration
-    Token closeParenToken = tokenizer.getToken();
-    if (!closeParenToken.isCloseParen()) {
-        die ("Parser::forStatement", "expected ' ) '", closeParenToken);
-    }
-
-    Token openCurBraceToken = tokenizer.getToken();
-    if (!openCurBraceToken.isOpenCurlyBrace()){
-        die ("Parser::forStatement", "expected ' { '", openCurBraceToken);
-    }
-
-    Token newlineToken = tokenizer.getToken();
-    if (!newlineToken.isNewline()) {
-        die("Parser::forStatement", "expected NEWLINE after '{'", newlineToken);
-    }
-
-    Statements *loopBody = statements();
-
-    //NEWLINE <statements>
-    Token closeCurBraceToken = tokenizer.getToken();
-    if (!closeCurBraceToken.isCloseCurlyBrace()) {
-        die ("Parser::forStatement", "expected ' } '", closeCurBraceToken);
-    }
-    //return new ForStatement(something in here);
-    return new ForStatement(
-        initialization,
-        condition,
-        assignment,
-        loopBody);
 }
 
 ExprNode *Parser::relExpr() {

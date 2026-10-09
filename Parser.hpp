@@ -14,7 +14,10 @@ public:
 
     Statements *program();
     Statements *statements();
+    Statements *suite();
     Statement *statement();
+    Statement *simpleStatement();
+    Statement *compoundStatement();
     AssignmentStatement *assignmentStatement();
     PrintStatement *printStatement();
     ForStatement *forStatement();
@@ -29,7 +32,7 @@ public:
 
 private:
     Tokenizer &tokenizer;
-
+    RangeExpression *rangeExpression();
     [[noreturn]] void die(const std::string &where,
                           const std::string &message,
                           const Token &token) const;

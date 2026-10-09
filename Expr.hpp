@@ -58,4 +58,42 @@ public:
     [[nodiscard]] int evaluate(const SymbolTable &symbolTable) const override;
 };
 
+class EvaluatedRange {
+public:
+    EvaluatedRange(int start, int stop, int step);
+    [[nodiscard]] int start() const;
+    [[nodiscard]] int stop() const;
+    [[nodiscard]] int step() const;
+    [[nodiscard]] bool hasIteration() const;
+    [[nodiscard]] bool shouldContinue(int nextValue) const;
+private:
+    int start_;
+    int stop_;
+    int step_;
+};
+
+class RangeExpression {
+public:
+    explicit RangeExpression(ExprNode* stop); //first form of range
+    RangeExpression(ExprNode* start, ExprNode* stop); // second form of range
+    RangeExpression(
+        ExprNode* start,
+        ExprNode* stop,
+        ExprNode* step
+    ); //third form of range
+    ~RangeExpression();
+    RangeExpression(const RangeExpression&) = delete;
+    RangeExpression& operator=(const RangeExpression&) = delete;
+    [[nodiscard]] EvaluatedRange evaluate(
+        const SymbolTable& symbolTable
+    ) const;
+    //void print(std::ostream& output) const; //the actual
+    void print() const;
+private:
+    ExprNode* startExpression;
+    ExprNode* stopExpression;
+    ExprNode* stepExpression;
+};
+
+
 #endif // EXPRINTER_EXPR_HPP

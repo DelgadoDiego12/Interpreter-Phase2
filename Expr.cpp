@@ -2,7 +2,7 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
-
+#include <iosfwd>
 #include "Expr.hpp"
 
 ExprNode::ExprNode(Token token) : expressionToken{std::move(token)} {}
@@ -108,4 +108,85 @@ void Variable::print() const {
 
 int Variable::evaluate(const SymbolTable &symbolTable) const {
     return symbolTable.getValueFor(token().identifier());
+}
+
+///range stuff
+
+EvaluatedRange::EvaluatedRange(int start, int stop, int step) : start_(start), stop_(stop), step_(step){
+    if (step_ == 0) {
+        throw std::runtime_error("Invalid step amount"); //change to runtime error
+    }
+}
+
+int EvaluatedRange::start() const {
+    return start_;
+}
+
+int EvaluatedRange::stop() const {
+    return stop_;
+}
+
+int EvaluatedRange::step() const {
+    return step_;
+}
+
+bool EvaluatedRange::hasIteration() const {
+    if (step_ > 0) { //for positive step
+        return start_ < stop_;
+    }
+    else { //else for negative step
+        return start_ > stop_;
+    }
+}
+//similar to has iteration but you check if the next value is valid instead of start_
+bool EvaluatedRange::shouldContinue(int nextValue) const {
+    if (step_ > 0) {
+        return nextValue < stop_;
+    }
+    else {
+        return nextValue > stop_;
+    }
+}
+
+//range expression methods
+//first form of range constructor
+RangeExpression::RangeExpression(ExprNode* stop) : startExpression{nullptr}, stopExpression{stop}, stepExpression{nullptr} {}
+//second form of range constructor
+RangeExpression::RangeExpression(ExprNode* start, ExprNode* stop) : startExpression{start}, stopExpression{stop}, stepExpression {nullptr} {}
+//third form of range constructor
+RangeExpression::RangeExpression(ExprNode* start, ExprNode* stop, ExprNode* step) : startExpression{start}, stopExpression{stop}, stepExpression{step} {}
+
+RangeExpression::~RangeExpression() {
+    delete startExpression;
+    delete stopExpression;
+    delete stepExpression;
+}
+
+
+EvaluatedRange RangeExpression::evaluate(const SymbolTable &symbolTable) const {
+    int start, stop, step;
+    if (startExpression != nullptr) { //if not null evaluate
+        start = startExpression->evaluate(symbolTable);
+    }
+    else { start = 0; } //otherwise set start to 0
+    stop = stopExpression->evaluate(symbolTable);
+    if (stepExpression != nullptr) { //if not null also evaluate
+        step = stepExpression->evaluate(symbolTable);
+    }
+    else { step = 1; } //if null set to 1
+    return EvaluatedRange(start, stop, step);
+}
+
+void RangeExpression::print() const {
+    std::cout << "range( ";
+    if (startExpression != nullptr) {
+        startExpression->print();
+        std::cout << " , ";
+    }
+    stopExpression->print();
+    if (stepExpression != nullptr) {
+        std::cout << " , ";
+        stepExpression->print();
+    }
+    std::cout << " )";
 }

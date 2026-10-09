@@ -252,7 +252,7 @@ Token Tokenizer::getToken() {
             character == '*' || character == '/' || character == '%' ||
             character == ';' || character == '(' || character == ')' ||
             character == '>' || character == '<' || character == '{' ||
-            character == '}'){
+            character == '}' || character == ':' || character == ',') {
         std::string oneChar = "";
         oneChar = character; //to convert char to string
         token.setSymbol(oneChar);
@@ -263,6 +263,10 @@ Token Tokenizer::getToken() {
             token.setKeyword(Keyword::forKeyword);
         else if (identifier == "print")
             token.setKeyword(Keyword::printKeyword);
+        else if (identifier == "in")
+            token.setKeyword(Keyword::inKeyword);
+        else if (identifier == "range")
+            token.setKeyword(Keyword::rangeKeyword);
         else
             token.setIdentifier(std::move(identifier));
     } else {

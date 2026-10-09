@@ -56,6 +56,20 @@ private:
 
 class ForStatement final : public Statement {
 public:
+    ForStatement(std::string variableName, RangeExpression *rangeExpression, Statements *loopBody);
+    ~ForStatement() override;
+    void evaluate(SymbolTable &symbolTable) const override;
+    void print() const override;
+private:
+    std::string variableName;
+    RangeExpression *rangeExpression;
+    Statements *loopBody;
+
+};
+
+/*
+class ForStatement final : public Statement {
+public:
     ForStatement(AssignmentStatement *initialization, ExprNode *condition, AssignmentStatement *assignment, Statements *loopBody);
     ~ForStatement() override;
     void evaluate(SymbolTable &symbolTable) const override;
@@ -67,5 +81,21 @@ private:
     Statements *loopBody;
 
 };
+
+
+class EvaluatedRange {
+public:
+    EvaluatedRange(int start, int stop, int step);
+    [[nodiscard]] int start() const;
+    [[nodiscard]] int stop() const;
+    [[nodiscard]] int step() const;
+    [[nodiscard]] bool hasIteration() const;
+    [[nodiscard]] bool shouldContinue(int nextValue) const;
+private:
+    int start_;
+    int stop_;
+    int step_;
+};
+*/
 
 #endif // EXPRINTER_STATEMENTS_HPP

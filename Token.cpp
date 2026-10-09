@@ -15,6 +15,10 @@ void Token::print(std::ostream &output) const {
         output << "for";
     else if (isPrintKeyword())
         output << "print";
+    else if (isInKeyword())
+        output << "in";
+    else if (isRangeKeyword())
+        output << "range";
     else if (isOpenParen())
         output << '(';
     else if (isCloseParen())
@@ -37,8 +41,6 @@ void Token::print(std::ostream &output) const {
         output << identifier();
     else if (isInteger())
         output << integerValue();
-
-    //my additions
     else if (isLessThanOperator())
         output << " < ";
     else if (isGreaterThanOperator())
@@ -55,6 +57,10 @@ void Token::print(std::ostream &output) const {
         output << " <= ";
     else if (isGreaterOrEqualToOperator())
         output << " >= ";
+    else if (isColon())
+        output << " : ";
+    else if (isComma())
+        output << " , ";
     else
         output << "uninitialized token";
 }
