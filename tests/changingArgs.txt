@@ -1,0 +1,8 @@
+total = 0
+start = 1
+stop = 5
+
+for i in range(start, stop):
+    start = start + 10
+    stop = stop + 10
+    print i
