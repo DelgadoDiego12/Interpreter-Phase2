@@ -1,0 +1,5 @@
+total = 0
+for i in range(5): 
+    i = 10
+    total = total + i
+print total

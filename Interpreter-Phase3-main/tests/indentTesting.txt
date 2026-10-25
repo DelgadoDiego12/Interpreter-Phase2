@@ -1,0 +1,63 @@
+
+print 1000
+
+for i in range(3):
+    print i
+
+print 1001
+
+for i in range(2):
+    print i
+    print i + 10
+    print i + 20
+
+print 1002
+
+for i in range(2):
+    for j in range(3):
+        print i
+        print j
+
+print 1003
+
+for i in range(2):
+    for j in range(2):
+        print j
+    print i
+
+print 1004
+
+for i in range(2):
+    for j in range(2):
+        for k in range(2):
+            print k
+print 999
+
+print 1005
+
+for i in range(3):
+
+    print i
+
+    print i + 100
+
+print 1006
+
+for i in range(2):
+    print i
+
+    for j in range(2):
+        print j
+
+    print i + 10
+
+print 1007
+
+for i in range(2):
+    print i
+    for j in range(2):
+        print j
+    print i + 20
+print 888
+
+print 1999

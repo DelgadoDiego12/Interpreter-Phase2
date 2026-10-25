@@ -1,0 +1,15 @@
+n = 10
+sum = 0
+for m in range (n) :
+    for j in range (n):
+        sum = sum + 1
+print sum
+
+
+k = 10
+sum = 0
+for s in range (k) :
+    for j in range (k):
+        sum = sum + 1
+print sum
+

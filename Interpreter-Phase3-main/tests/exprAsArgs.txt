@@ -1,0 +1,13 @@
+total = 0
+start = 2
+stop = 6
+step = 2
+
+for i in range(start - 1, stop, step):
+    total = total + i
+print total
+
+
+for j in range(start, 20, 2) :
+    print j
+    

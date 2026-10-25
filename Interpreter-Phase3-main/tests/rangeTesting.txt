@@ -1,0 +1,99 @@
+
+print 2000
+
+for i in range(5):
+    print i
+
+print 2001
+
+for i in range(2, 6):
+    print i
+
+print 2002
+
+for i in range(1, 10, 2):
+    print i
+
+print 2003
+
+for i in range(10, 0, -2):
+    print i
+
+print 2004
+
+for i in range(5, 0):
+    print i
+print 400
+
+print 2005
+
+for i in range(0, 5, -1):
+    print i
+print 500
+
+print 2006
+
+for i in range(0):
+    print i
+print 600
+
+print 2007
+
+for i in range(1):
+    print i
+
+print 2008
+
+for i in range(2 + 1, 4 * 2, 1 + 1):
+    print i
+
+print 2009
+
+start = 2
+stop = 8
+step = 2
+
+for i in range(start, stop, step):
+    print i
+
+print 2010
+
+limit = 5
+
+for i in range(limit):
+    print i
+    limit = 100
+
+print limit
+
+print 2011
+
+for i in range(3):
+    i = 100
+    print i
+
+print i
+
+print 2012
+
+for i in range(2):
+    for j in range(3):
+        print i * 10 + j
+
+print 2013
+
+total = 0
+
+for i in range(5):
+    total = total + i
+
+print total
+
+print 2014
+
+for i in range(5, 5):
+    print i
+
+print 700
+
+print 2999

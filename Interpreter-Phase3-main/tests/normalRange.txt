@@ -1,0 +1,7 @@
+total = 0
+for i in range(3) :
+    total = total + i
+    for j in range(2) :
+        total = total + 10
+    total = total + 100
+print total

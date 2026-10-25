@@ -1,0 +1,7 @@
+x = False
+y = True
+print x
+print y
+x = True
+print x
+print y
