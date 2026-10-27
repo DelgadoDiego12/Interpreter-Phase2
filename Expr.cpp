@@ -100,6 +100,16 @@ int IntegerLiteral::evaluate(const SymbolTable &) const {
     return token().integerValue();
 }
 
+DoubleLiteral::DoubleLiteral(Token token) : ExprNode{std::move(token)} {}
+
+void DoubleLiteral::print() const {
+    token().print(std::cout);
+}
+
+ValueDescriptor * DoubleLiteral::evaluate(const SymbolTable &symbolTable) const {
+    return new DoubleValueDescriptor{token().doubleValue()};
+}
+
 Variable::Variable(Token token) : ExprNode{std::move(token)} {}
 
 void Variable::print() const {

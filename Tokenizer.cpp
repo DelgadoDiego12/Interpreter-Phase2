@@ -3,6 +3,7 @@
 #include <iostream>
 #include <limits>
 #include <string>
+#include <stdexcept>
 
 #include "Tokenizer.hpp"
 
@@ -47,24 +48,19 @@ std::string Tokenizer::readIdentifier(char firstCharacter) {
     return identifier;
 }
 
-int Tokenizer::readInteger(char firstDigit) {
-    int value = firstDigit - '0';
+std::string Tokenizer::readDigits(char firstDigit) {
+    std::string digits{firstDigit};
+
     while (inputStream.peek() != std::char_traits<char>::eof()) {
         char character = static_cast<char>(inputStream.peek());
+
         if (!isDigit(character))
             break;
 
-        const int digit = character - '0';
-        if (value > (std::numeric_limits<int>::max() - digit) / 10) {
-            std::cerr << "Integer literal is too large at line " << lineNumber
-                      << ", column " << columnNumber << ".\n";
-            std::exit(EXIT_FAILURE);
-        }
-
         getCharacter(character);
-        value = value * 10 + digit;
+        digits += character;
     }
-    return value;
+    return digits;
 }
 
 Tokenizer::Tokenizer(std::ifstream &stream) : inputStream{stream} {}
@@ -239,7 +235,30 @@ Token Tokenizer::getToken() {
     char nextChar = static_cast<char>(inputStream.peek());
 
     if (isDigit(character)) {
-        token.setIntegerValue(readInteger(character));
+        std::string digits = readDigits(character);
+
+        if (inputStream.peek() == '.') {
+            char decimalPoint;
+            getCharacter(decimalPoint);
+
+            if (!isDigit(static_cast<char>(inputStream.peek()))) {
+                std::cerr << "Invalid double literal at line " << lineNumber << ".\n";
+                std::exit(EXIT_FAILURE);
+            }
+            char firstFractionDigit;
+            getCharacter(firstFractionDigit);
+
+            std::string fractionDigits = readDigits(firstFractionDigit);
+
+            try {
+                token.setDoubleValue(std::stod(digits + "." + fractionDigits));
+            } catch (const std::out_of_range &) {
+                std::cerr << "Double literal is too large.\n";
+                std::exit(EXIT_FAILURE);
+            }
+        } else {
+            token.setIntegerValue(std::stoi(digits));
+        }
     }
     else if ((character == '=' || character == '!' || character == '<' || character == '>') && (nextChar == '=')){
         getCharacter(nextChar);

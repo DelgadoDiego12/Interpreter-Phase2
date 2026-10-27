@@ -5,6 +5,7 @@
 #include <iosfwd>
 #include <string>
 #include <utility>
+#include <cstdint>
 
 enum class Keyword {
     none,
@@ -78,6 +79,18 @@ public:
     [[nodiscard]] bool isInteger() const { return _isInteger; }
     [[nodiscard]] int integerValue() const { return _integerValue; }
 
+    void setDoubleValue(double value) {
+        _doubleValue = value;
+        _isDouble = true;
+    }
+
+    [[nodiscard]] bool isDouble() const {
+        return _isDouble;
+    }
+    [[nodiscard]] double doubleValue() const {
+        return _doubleValue;
+    }
+
     void print(std::ostream &output) const;
 
 private:
@@ -92,6 +105,8 @@ private:
     int _integerValue{0};
     std::size_t _lineNumber{0};
     std::size_t _columnNumber{0};
+    bool _isDouble{false};
+    double _doubleValue{0.0};
 };
 
 #endif // ALEXICALANALYZER_TOKEN_HPP

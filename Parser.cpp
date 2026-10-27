@@ -288,6 +288,8 @@ ExprNode *Parser::arithAtom() {
 
     if (token.isInteger())
         return new IntegerLiteral(token);
+    if (token.isDouble())
+        return new DoubleLiteral(token);
     if (token.isIdentifier())
         return new Variable(token);
     if (token.isOpenParen()) {

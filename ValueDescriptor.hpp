@@ -21,7 +21,6 @@ public:
     [[nodiscard]] virtual ValueDescriptor *clone() const = 0;
 };
 
-#endif
 
 class IntegerValueDescriptor final : public ValueDescriptor {
 public:
@@ -78,3 +77,5 @@ public:
 private:
     std::string stringValue;
 };
+
+#endif

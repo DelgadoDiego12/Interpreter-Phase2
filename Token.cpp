@@ -41,6 +41,8 @@ void Token::print(std::ostream &output) const {
         output << identifier();
     else if (isInteger())
         output << integerValue();
+    else if (isDouble())
+        output << doubleValue();
     else if (isLessThanOperator())
         output << " < ";
     else if (isGreaterThanOperator())

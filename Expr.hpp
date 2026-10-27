@@ -50,6 +50,14 @@ public:
     [[nodiscard]] int evaluate(const SymbolTable &symbolTable) const override;
 };
 
+class DoubleLiteral final : public ExprNode {
+public:
+    explicit DoubleLiteral(Token token);
+    void print() const override;
+
+    [[nodiscard]] ValueDescriptor *evaluate(const SymbolTable &symbolTable) const override;
+};
+
 class Variable final : public ExprNode {
 public:
     explicit Variable(Token token);
