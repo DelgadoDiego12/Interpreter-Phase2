@@ -1,0 +1,5 @@
+print 'Happy'
+print ' '
+print "Halloween"
+print "spooky'
+print 'scary

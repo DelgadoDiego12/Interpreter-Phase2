@@ -1,0 +1,11 @@
+for i in range(3):
+    x = i * 3
+    print x
+s = "hallow"
+for i in range(3):
+    s = s + "e"
+print s + "n"
+y = "!"
+for i in range(3):
+    s = s + y
+print s

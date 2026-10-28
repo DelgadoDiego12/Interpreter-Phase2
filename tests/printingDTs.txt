@@ -1,0 +1,4 @@
+print 100
+print 33.33
+print "False" == str(False)
+print "good afternoon"

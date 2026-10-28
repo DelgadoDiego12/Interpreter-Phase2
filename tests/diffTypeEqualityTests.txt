@@ -1,0 +1,4 @@
+print 6 == "Gaby"
+print 18 != True
+print 12.00 == False
+print "hey" == str(333)

@@ -1,0 +1,3 @@
+print 'The' == "The"
+print "holidays" == 'holidays'
+print "are near" == "arentnear"

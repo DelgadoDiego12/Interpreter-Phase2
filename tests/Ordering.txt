@@ -1,0 +1,5 @@
+print "halloween" < "christmas"
+print "thanksgiving" > "christmas"
+print "thanksgiving" <= "thanksgiving"
+print 12 >= 11
+print 12.00 > 11.99

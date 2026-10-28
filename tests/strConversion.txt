@@ -1,0 +1,4 @@
+print "h" + str(3110)
+print "w" + str(0) + "rld"
+
+print "I have " + str(100.00) + " candy for halloween"

@@ -1,0 +1,6 @@
+x = True
+print x
+x = 12
+print x
+x = "spooky"
+print x

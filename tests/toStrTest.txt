@@ -1,0 +1,8 @@
+print str(35)
+print str(True)
+print str(False)
+print str("happy halloween")
+x = 200
+print str(x)
+print str(3 + 663)
+print str(6.18) == "6.18"

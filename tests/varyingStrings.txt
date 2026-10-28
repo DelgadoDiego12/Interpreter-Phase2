@@ -1,0 +1,4 @@
+print "happy"
+print 'halloween'
+print "I am so excited for halloween"
+print "I can't wait for halloween"

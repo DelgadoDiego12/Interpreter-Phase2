@@ -1,0 +1,8 @@
+a = 3
+b = 4
+c = 20
+s = "walk "
+t = " miles away"
+print a * b + c
+x = a * b + c
+print s + str(x) + t  

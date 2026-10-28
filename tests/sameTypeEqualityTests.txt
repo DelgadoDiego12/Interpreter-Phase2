@@ -1,0 +1,11 @@
+print 6 == 6
+print 18 != 18
+print 12.00 == 12
+
+print "Gaby" == 'Gaby'
+print "Diego" != "Diego"
+
+print True == True
+print False == True
+print False == False
+print True != False
