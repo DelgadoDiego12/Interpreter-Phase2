@@ -1,0 +1,11 @@
+count = 4
+scale = 2.5
+is_even = count % 2 == 0
+course = "CS " + "460"
+message = "count = " + str(count)
+
+print count
+print scale
+print is_even
+print course
+print message
