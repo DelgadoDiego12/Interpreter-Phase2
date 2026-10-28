@@ -26,3 +26,25 @@ ValueDescriptor * DoubleValueDescriptor::clone() const {
 double DoubleValueDescriptor::value() const {
     return doubleValue;
 }
+
+IntegerValueDescriptor::IntegerValueDescriptor(std::int64_t value) : integerValue{value} {}
+
+ValueDescriptor::Type IntegerValueDescriptor::type() const {
+    return Type::integer;
+}
+
+std::string IntegerValueDescriptor::typeName() const {
+    return "integer";
+}
+
+std::string IntegerValueDescriptor::toString() const {
+    return std::to_string(integerValue);
+}
+
+ValueDescriptor * IntegerValueDescriptor::clone() const {
+    return new IntegerValueDescriptor{integerValue};
+}
+
+std::int64_t IntegerValueDescriptor::value() const {
+    return integerValue;
+}
