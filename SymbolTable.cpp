@@ -29,7 +29,7 @@ const ValueDescriptor *SymbolTable::getValueFor(const std::string &variableName)
     const auto entry = values.find(variableName);
 
     if (entry == values.end()) {
-        throw std::runtime_error("use of undefined variable'" + variableName + "'");
+        throw std::runtime_error("use of undefined variable '" + variableName + "'");
     }
     return entry->second;
 }
