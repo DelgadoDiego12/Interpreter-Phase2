@@ -1,8 +1,29 @@
-#include <sstream>
 #include "ValueDescriptor.hpp"
-
+#include <sstream>
 #include "SymbolTable.hpp"
 
+IntegerValueDescriptor::IntegerValueDescriptor(std::int64_t value) : integerValue{value} {}
+
+ValueDescriptor::Type IntegerValueDescriptor::type() const {
+    return Type::integer;
+}
+
+std::string IntegerValueDescriptor::typeName() const {
+    return "integer";
+}
+
+std::string IntegerValueDescriptor::toString() const {
+    return std::to_string(integerValue);
+}
+
+ValueDescriptor * IntegerValueDescriptor::clone() const {
+    return new IntegerValueDescriptor{integerValue};
+}
+
+std::int64_t IntegerValueDescriptor::value() const {
+    return integerValue;
+}
+//
 DoubleValueDescriptor::DoubleValueDescriptor(double value) : doubleValue{value} {}
 
 ValueDescriptor::Type DoubleValueDescriptor::type() const {
@@ -26,25 +47,48 @@ ValueDescriptor * DoubleValueDescriptor::clone() const {
 double DoubleValueDescriptor::value() const {
     return doubleValue;
 }
+//
+BooleanValueDescriptor::BooleanValueDescriptor(bool value) : booleanValue(value) {}
 
-IntegerValueDescriptor::IntegerValueDescriptor(std::int64_t value) : integerValue{value} {}
-
-ValueDescriptor::Type IntegerValueDescriptor::type() const {
-    return Type::integer;
+ValueDescriptor::Type BooleanValueDescriptor::type() const {
+    return Type::boolean;
 }
 
-std::string IntegerValueDescriptor::typeName() const {
-    return "integer";
+std::string BooleanValueDescriptor::typeName() const {
+    return "boolean";
 }
 
-std::string IntegerValueDescriptor::toString() const {
-    return std::to_string(integerValue);
+std::string BooleanValueDescriptor::toString() const {
+    if (booleanValue) { return "True"; }
+    return "False";
 }
 
-ValueDescriptor * IntegerValueDescriptor::clone() const {
-    return new IntegerValueDescriptor{integerValue};
+ValueDescriptor *BooleanValueDescriptor::clone() const {
+    return new BooleanValueDescriptor(booleanValue);
 }
 
-std::int64_t IntegerValueDescriptor::value() const {
-    return integerValue;
+bool BooleanValueDescriptor::value() const {
+    return booleanValue;
+}
+//
+StringValueDescriptor::StringValueDescriptor(std::string value) : stringValue(std::move(value)) {}
+
+ValueDescriptor::Type StringValueDescriptor::type() const {
+    return Type::string;
+}
+
+std::string StringValueDescriptor::typeName() const {
+    return "string";
+}
+
+std::string StringValueDescriptor::toString() const {
+    return stringValue;
+}
+
+ValueDescriptor *StringValueDescriptor::clone() const {
+    return new StringValueDescriptor(stringValue);
+}
+
+const std::string &StringValueDescriptor::value() const {
+    return stringValue;
 }

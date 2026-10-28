@@ -283,15 +283,14 @@ ExprNode *Parser::arithPrimary() {
 }
 
 ExprNode *Parser::arithAtom() {
-    // <arith-atom> -> <id> | <integer> | '(' <rel-expr> ')'
+    // <arith-atom> -> <id> | 'str'(' <rel-expr> ')' | '(' <rel-expr> ')' | <literal>
     Token token = tokenizer.getToken();
 
     if (token.isInteger())
         return new IntegerLiteral(token);
-    if (token.isDouble())
-        return new DoubleLiteral(token);
     if (token.isIdentifier())
         return new Variable(token);
+    //needs str ( <rel-expr> )
     if (token.isOpenParen()) {
         ExprNode *expression = relExpr();
         Token closeParen = tokenizer.getToken();
@@ -302,3 +301,17 @@ ExprNode *Parser::arithAtom() {
 
     die("Parser::arithAtom", "expected an identifier, integer, or '('", token);
 }
+
+ExprNode *Parser::literal() {
+    //<literal> -> <integer> | <double> | <boolean> | <string>
+    Token token = tokenizer.getToken();
+    if (token.isInteger())
+        return new IntegerLiteral(token);
+    if (token.isDouble())
+        return new DoubleLiteral(token);
+    if (token.isTrueKeyword() || token.isFalseKeyword() )
+        return new BooleanLiteral(token);
+    if (token.isString())
+        return new StringLiteral(token);
+    die("Parser::literal", "expected a literal", token);
+    }

@@ -21,7 +21,6 @@ public:
     [[nodiscard]] virtual ValueDescriptor *clone() const = 0;
 };
 
-
 class IntegerValueDescriptor final : public ValueDescriptor {
 public:
     explicit IntegerValueDescriptor(std::int64_t value);

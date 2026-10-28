@@ -23,6 +23,14 @@ bool Tokenizer::isDiscardedWhitespace(char character) {
     return character != '\n' && std::isspace(static_cast<unsigned char>(character)) != 0;
 }
 
+bool Tokenizer::isValidStringChar(char character) {
+    unsigned char c = static_cast<unsigned char>(character);
+    if (c >= 32 && c <= 126 && c != '\\') {
+        return true;
+    }
+    return false;
+}
+
 bool Tokenizer::getCharacter(char &character) {
     if (!inputStream.get(character))
         return false;
@@ -48,6 +56,7 @@ std::string Tokenizer::readIdentifier(char firstCharacter) {
     return identifier;
 }
 
+//phase 3
 std::string Tokenizer::readDigits(char firstDigit) {
     std::string digits{firstDigit};
 
@@ -260,6 +269,24 @@ Token Tokenizer::getToken() {
             token.setIntegerValue(std::stoi(digits));
         }
     }
+
+    else if (character == '\"' || character == '\'') {
+        char quote = character;
+        char next = inputStream.peek();
+        std::string value;
+        while(next != std::char_traits<char>::eof() && next != quote) {
+            if (isValidStringChar(character)) {
+                value += character;
+            }
+            else {
+                std::cerr << "Invalid character";
+                std::exit(EXIT_FAILURE);
+            }
+        }
+        if (next == quote) {
+            token.setStringValue(std::move(value));
+        }
+    }
     else if ((character == '=' || character == '!' || character == '<' || character == '>') && (nextChar == '=')){
         getCharacter(nextChar);
         std::string twoChar = ""; //creating string for 2 character operators
@@ -286,6 +313,10 @@ Token Tokenizer::getToken() {
             token.setKeyword(Keyword::inKeyword);
         else if (identifier == "range")
             token.setKeyword(Keyword::rangeKeyword);
+        else if (identifier == "True")
+            token.setKeyword(Keyword::trueKeyword);
+        else if (identifier == "False")
+            token.setKeyword(Keyword::falseKeyword);
         else
             token.setIdentifier(std::move(identifier));
     } else {

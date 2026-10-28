@@ -12,7 +12,10 @@ enum class Keyword {
     forKeyword,
     printKeyword,
     inKeyword,
-    rangeKeyword
+    rangeKeyword,
+    trueKeyword,
+    falseKeyword,
+    strKeyword
 };
 
 class Token {
@@ -50,7 +53,8 @@ public:
     [[nodiscard]] bool isNotEqualToOperator() const { return _symbol == "!="; }
     [[nodiscard]] bool isLessOrEqualToOperator() const { return _symbol == "<="; }
     [[nodiscard]] bool isGreaterOrEqualToOperator() const { return _symbol == ">="; }
-
+    [[nodiscard]] bool isQuotationMark() const { return _symbol == "\""; } //for strings
+    [[nodiscard]] bool isSingleQuotMark() const { return _symbol == "\'"; } //for string
     [[nodiscard]] bool isColon() const { return _symbol == ":"; }
     [[nodiscard]] bool isComma() const { return _symbol == ","; }
     [[nodiscard]] bool isIndent() const { return _indent; }
@@ -68,8 +72,11 @@ public:
     [[nodiscard]] bool isKeyword() const { return _keyword != Keyword::none; }
     [[nodiscard]] bool isForKeyword() const { return _keyword == Keyword::forKeyword; }
     [[nodiscard]] bool isPrintKeyword() const { return _keyword == Keyword::printKeyword; }
-    [[nodiscard]] bool isInKeyword() const { return _keyword == Keyword::inKeyword; } //
-    [[nodiscard]] bool isRangeKeyword() const { return _keyword == Keyword::rangeKeyword; } //
+    [[nodiscard]] bool isInKeyword() const { return _keyword == Keyword::inKeyword; } 
+    [[nodiscard]] bool isRangeKeyword() const { return _keyword == Keyword::rangeKeyword; } 
+    [[nodiscard]] bool isTrueKeyword() const { return _keyword == Keyword::trueKeyword; } //
+    [[nodiscard]] bool isFalseKeyword() const { return _keyword == Keyword::falseKeyword; } //
+    [[nodiscard]] bool isSTRKeyword() const {return _keyword == Keyword::strKeyword; }
     [[nodiscard]] Keyword keyword() const { return _keyword; }
 
     void setIntegerValue(int value) {
@@ -78,18 +85,20 @@ public:
     }
     [[nodiscard]] bool isInteger() const { return _isInteger; }
     [[nodiscard]] int integerValue() const { return _integerValue; }
-
+    
     void setDoubleValue(double value) {
         _doubleValue = value;
         _isDouble = true;
     }
+    [[nodiscard]] bool isDouble() const { return _isDouble; }
+    [[nodiscard]] double doubleValue() const { return _doubleValue; }
 
-    [[nodiscard]] bool isDouble() const {
-        return _isDouble;
+    void setStringValue(std::string value) {
+        _stringValue = std::move(value);
+        _isString = true;
     }
-    [[nodiscard]] double doubleValue() const {
-        return _doubleValue;
-    }
+    [[nodiscard]] bool isString() const { return _isString; }
+    [[nodiscard]] const std::string &stringValue() const { return _stringValue; }
 
     void print(std::ostream &output) const;
 
@@ -99,14 +108,16 @@ private:
     bool _eof{false};
     bool _newline{false};
     bool _isInteger{false};
+    bool _isDouble{false};
+    bool _isString{false};
     bool _indent{false};
     bool _dedent{false};
     std::string _symbol{'\0'};
     int _integerValue{0};
+    std::string _stringValue{};
+    double _doubleValue{0.0};
     std::size_t _lineNumber{0};
     std::size_t _columnNumber{0};
-    bool _isDouble{false};
-    double _doubleValue{0.0};
 };
 
 #endif // ALEXICALANALYZER_TOKEN_HPP

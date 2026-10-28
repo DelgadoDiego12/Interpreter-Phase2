@@ -22,10 +22,11 @@ BinaryExprNode::~BinaryExprNode() {
 }
 
 int BinaryExprNode::evaluate(const SymbolTable &symbolTable) const {
-    const int leftValue = leftOperand->evaluate(symbolTable);
-    const int rightValue = rightOperand->evaluate(symbolTable);
-
+    auto leftValue = leftOperand->evaluate(symbolTable);
+    auto rightValue = rightOperand->evaluate(symbolTable);
+    //check the value descriptor type of leftValue and rightValue
     if (token().isAdditionOperator())
+    //if left value and right value are strings
         return leftValue + rightValue;
     if (token().isSubtractionOperator())
         return leftValue - rightValue;
@@ -45,6 +46,7 @@ int BinaryExprNode::evaluate(const SymbolTable &symbolTable) const {
                 ", column " + std::to_string(token().columnNumber()));
         return leftValue % rightValue;
     }
+    //all these return boolean value descriptors
     if (token().isEqualToOperator())
         return leftValue == rightValue;
     if (token().isNotEqualToOperator())
@@ -106,8 +108,28 @@ void DoubleLiteral::print() const {
     token().print(std::cout);
 }
 
-ValueDescriptor * DoubleLiteral::evaluate(const SymbolTable &symbolTable) const {
+ValueDescriptor *DoubleLiteral::evaluate(const SymbolTable &symbolTable) const {
     return new DoubleValueDescriptor{token().doubleValue()};
+}
+
+BooleanLiteral::BooleanLiteral(Token token) : ExprNode{std::move(token)} {}
+
+void BooleanLiteral::print() const {
+    token().print(std::cout);
+}
+
+ValueDescriptor *BooleanLiteral::evaluate(const SymbolTable &) const {
+    return new BooleanValueDescriptor(token().isTrueKeyword()); //returns keyword not token
+}
+
+StringLiteral::StringLiteral(Token token) : ExprNode{std::move(token)} {}
+
+void StringLiteral::print() const {
+    token().print(std::cout);
+}
+
+ValueDescriptor *StringLiteral::evaluate(const SymbolTable &) const {
+    return new StringValueDescriptor{token().stringValue()};
 }
 
 Variable::Variable(Token token) : ExprNode{std::move(token)} {}
@@ -116,11 +138,10 @@ void Variable::print() const {
     token().print(std::cout);
 }
 
-int Variable::evaluate(const SymbolTable &symbolTable) const {
+ValueDescriptor *Variable::evaluate(const SymbolTable &symbolTable) const {
     return symbolTable.getValueFor(token().identifier());
 }
 
-///range stuff
 
 EvaluatedRange::EvaluatedRange(int start, int stop, int step) : start_(start), stop_(stop), step_(step){
     if (step_ == 0) {

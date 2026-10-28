@@ -36,11 +36,11 @@ private:
     std::string readIdentifier(char firstCharacter);
     std::string readDigits(char firstCharacter);
 
-
     static bool isDigit(char character);
     static bool isIdentifierStart(char character);
     static bool isIdentifierPart(char character);
     static bool isDiscardedWhitespace(char character);
+    bool isValidStringChar(char character);
 };
 
 #endif // ALEXICALANALYZER_TOKENIZER_HPP
