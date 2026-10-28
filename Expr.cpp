@@ -21,46 +21,105 @@ BinaryExprNode::~BinaryExprNode() {
     delete rightOperand;
 }
 
-int BinaryExprNode::evaluate(const SymbolTable &symbolTable) const {
-    auto leftValue = leftOperand->evaluate(symbolTable);
-    auto rightValue = rightOperand->evaluate(symbolTable);
-    //check the value descriptor type of leftValue and rightValue
-    if (token().isAdditionOperator())
-    //if left value and right value are strings
-        return leftValue + rightValue;
-    if (token().isSubtractionOperator())
-        return leftValue - rightValue;
-    if (token().isMultiplicationOperator())
-        return leftValue * rightValue;
-    if (token().isDivisionOperator()) {
-        if (rightValue == 0)
-            throw std::runtime_error(
-                "division by zero at line " + std::to_string(token().lineNumber()) +
-                ", column " + std::to_string(token().columnNumber()));
-        return leftValue / rightValue;
-    }
-    if (token().isModuloOperator()) {
-        if (rightValue == 0)
-            throw std::runtime_error(
-                "modulo by zero at line " + std::to_string(token().lineNumber()) +
-                ", column " + std::to_string(token().columnNumber()));
-        return leftValue % rightValue;
-    }
-    //all these return boolean value descriptors
-    if (token().isEqualToOperator())
-        return leftValue == rightValue;
-    if (token().isNotEqualToOperator())
-        return leftValue != rightValue;
-    if (token().isLessThanOperator())
-        return leftValue < rightValue;
-    if (token().isGreaterThanOperator())
-        return leftValue > rightValue;
-    if (token().isLessOrEqualToOperator())
-        return leftValue <= rightValue;
-    if (token().isGreaterOrEqualToOperator())
-        return leftValue >= rightValue;
+ValueDescriptor *BinaryExprNode::evaluate(const SymbolTable &symbolTable) const {
 
-    throw std::logic_error("unsupported infix operator");
+    ValueDescriptor *leftValue = leftOperand->evaluate(symbolTable);
+    ValueDescriptor *rightValue = rightOperand->evaluate(symbolTable);
+
+    const bool leftIsDouble = leftValue->type() == ValueDescriptor::Type::doubleValue;
+
+    const bool rightIsDouble = rightValue->type() == ValueDescriptor::Type::doubleValue;
+
+    if (leftIsDouble || rightIsDouble) {
+        double left;
+        double right;
+
+        if (leftIsDouble)
+            left = dynamic_cast<DoubleValueDescriptor *>(leftValue)->value();
+        else
+            left = dynamic_cast<IntegerValueDescriptor *>(leftValue)->value();
+
+        if (rightIsDouble)
+            right = dynamic_cast<DoubleValueDescriptor *>(rightValue)->value();
+        else
+            right = dynamic_cast<IntegerValueDescriptor *>(rightValue)->value();
+
+        ValueDescriptor *result = nullptr;
+
+        if (token().isAdditionOperator())
+            result = new DoubleValueDescriptor{left + right};
+        else if (token().isSubtractionOperator())
+            result = new DoubleValueDescriptor{left - right};
+        else if (token().isMultiplicationOperator())
+            result = new DoubleValueDescriptor{left * right};
+        else if (token().isDivisionOperator()){
+            if (right == 0.0)
+                throw std::runtime_error("Division by zero");
+            result = new DoubleValueDescriptor{left / right};
+        }
+        else if (token().isEqualToOperator())
+            result = new BooleanValueDescriptor{left == right};
+        else if (token().isNotEqualToOperator())
+            result = new BooleanValueDescriptor{left != right};
+        else if (token().isLessThanOperator())
+            result = new BooleanValueDescriptor{left < right};
+        else if (token().isGreaterThanOperator())
+            result = new BooleanValueDescriptor{left > right};
+        else if (token().isLessOrEqualToOperator())
+            result = new BooleanValueDescriptor{left <= right};
+        else if (token().isGreaterOrEqualToOperator())
+            result = new BooleanValueDescriptor{left >= right};
+
+        delete leftValue;
+        delete rightValue;
+
+        if (result != nullptr)
+            return result;
+
+        throw std::runtime_error("Unsupported double operator");
+    }
+
+    const auto left = dynamic_cast<IntegerValueDescriptor *>(leftValue)->value();
+    const auto right = dynamic_cast<IntegerValueDescriptor *>(rightValue)->value();
+
+    ValueDescriptor *result = nullptr;
+
+    if (token().isAdditionOperator())
+        result = new IntegerValueDescriptor{left + right};
+    else if (token().isSubtractionOperator())
+        result = new IntegerValueDescriptor{left - right};
+    else if (token().isMultiplicationOperator())
+        result = new IntegerValueDescriptor{left * right};
+    else if (token().isDivisionOperator()) {
+        if (right == 0)
+            throw std::runtime_error("Division by zero");
+        result = new DoubleValueDescriptor{static_cast<double>(left) / static_cast<double>(right)};
+    }
+    else if (token().isModuloOperator()) {
+        if (right == 0)
+            throw std::runtime_error("Division by zero");
+        result = new IntegerValueDescriptor{left % right};
+    }
+    else if (token().isEqualToOperator())
+        result = new BooleanValueDescriptor{left == right};
+    else if (token().isNotEqualToOperator())
+        result = new BooleanValueDescriptor{left != right};
+    else if (token().isLessThanOperator())
+        result = new BooleanValueDescriptor{left < right};
+    else if (token().isGreaterThanOperator())
+        result = new BooleanValueDescriptor{left > right};
+    else if (token().isLessOrEqualToOperator())
+        result = new BooleanValueDescriptor{left <= right};
+    else if (token().isGreaterOrEqualToOperator())
+        result = new BooleanValueDescriptor{left >= right};
+
+    delete leftValue;
+    delete rightValue;
+
+    if (result != nullptr)
+        return result;
+
+    throw std::runtime_error("Unsupported integer operator");
 }
 
 void BinaryExprNode::print() const {
@@ -78,13 +137,34 @@ UnaryExprNode::~UnaryExprNode() {
     delete expression;
 }
 
-int UnaryExprNode::evaluate(const SymbolTable &symbolTable) const {
-    const int value = expression->evaluate(symbolTable);
-    if (token().isAdditionOperator())
-        return value;
-    if (token().isSubtractionOperator())
-        return -value;
-    throw std::logic_error("unsupported prefix operator");
+ValueDescriptor *UnaryExprNode::evaluate(const SymbolTable &symbolTable) const {
+    ValueDescriptor *value = expression->evaluate(symbolTable);
+
+    if (value->type() == ValueDescriptor::Type::integer) {
+        const auto integerValue = dynamic_cast<IntegerValueDescriptor *>(value)->value();
+
+        if (token().isAdditionOperator())
+            return value;
+
+        if (token().isSubtractionOperator()) {
+            delete value;
+            return new IntegerValueDescriptor{-integerValue};
+        }
+    }
+
+    if (value->type() == ValueDescriptor::Type::doubleValue) {
+        const auto doubleValue = dynamic_cast<DoubleValueDescriptor *>(value)->value();
+
+        if (token().isAdditionOperator())
+            return value;
+
+        if (token().isSubtractionOperator()) {
+            delete value;
+            return new DoubleValueDescriptor{-doubleValue};
+        }
+    }
+    delete value;
+    throw std::runtime_error("Unsupported prefix operator");
 }
 
 void UnaryExprNode::print() const {
@@ -98,8 +178,8 @@ void IntegerLiteral::print() const {
     token().print(std::cout);
 }
 
-int IntegerLiteral::evaluate(const SymbolTable &) const {
-    return token().integerValue();
+ValueDescriptor * IntegerLiteral::evaluate(const SymbolTable &) const {
+    return new IntegerValueDescriptor{token().integerValue()};
 }
 
 DoubleLiteral::DoubleLiteral(Token token) : ExprNode{std::move(token)} {}
@@ -108,7 +188,7 @@ void DoubleLiteral::print() const {
     token().print(std::cout);
 }
 
-ValueDescriptor *DoubleLiteral::evaluate(const SymbolTable &symbolTable) const {
+ValueDescriptor *DoubleLiteral::evaluate(const SymbolTable &) const {
     return new DoubleValueDescriptor{token().doubleValue()};
 }
 
@@ -139,7 +219,7 @@ void Variable::print() const {
 }
 
 ValueDescriptor *Variable::evaluate(const SymbolTable &symbolTable) const {
-    return symbolTable.getValueFor(token().identifier());
+    return symbolTable.getValueFor(token().identifier())->clone();
 }
 
 
@@ -195,17 +275,22 @@ RangeExpression::~RangeExpression() {
 
 
 EvaluatedRange RangeExpression::evaluate(const SymbolTable &symbolTable) const {
-    int start, stop, step;
-    if (startExpression != nullptr) { //if not null evaluate
-        start = startExpression->evaluate(symbolTable);
-    }
-    else { start = 0; } //otherwise set start to 0
-    stop = stopExpression->evaluate(symbolTable);
-    if (stepExpression != nullptr) { //if not null also evaluate
-        step = stepExpression->evaluate(symbolTable);
-    }
-    else { step = 1; } //if null set to 1
-    return EvaluatedRange(start, stop, step);
+    auto getIntegerValue = [&symbolTable](ExprNode *expression)->int {
+        ValueDescriptor *value = expression->evaluate(symbolTable);
+
+        if (value->type() != ValueDescriptor::Type::integer) {
+            delete value;
+            throw std::runtime_error("range arguments must be integers");
+        }
+        const int integerValue = dynamic_cast<IntegerValueDescriptor *>(value)->value();
+        delete value;
+        return integerValue;
+    };
+    const int start = startExpression != nullptr ? getIntegerValue(startExpression) : 0;
+    const int stop = getIntegerValue(stopExpression);
+    const int step = stepExpression != nullptr ? getIntegerValue(stepExpression) : 1;
+
+    return EvaluatedRange{start, stop, step};
 }
 
 void RangeExpression::print() const {

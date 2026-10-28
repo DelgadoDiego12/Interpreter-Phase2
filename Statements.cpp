@@ -87,7 +87,7 @@ void ForStatement::evaluate(SymbolTable &symbolTable) const {
     EvaluatedRange range = rangeExpression->evaluate(symbolTable);
     int iterator = range.start();
     while (range.shouldContinue(iterator)) {
-        symbolTable.setValueFor(variableName, iterator);
+        symbolTable.setValueFor(variableName, new IntegerValueDescriptor{iterator});
         loopBody->evaluate(symbolTable);
         iterator += range.step();
     }
