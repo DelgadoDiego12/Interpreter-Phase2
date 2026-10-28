@@ -1,0 +1,4 @@
+print "hello" + " world"
+print "b" > "a"
+print "hello" == "hello"
+print "hello" != 4

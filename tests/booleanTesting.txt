@@ -1,0 +1,3 @@
+print True == True
+print True != False
+print True == 1

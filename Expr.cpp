@@ -26,8 +26,76 @@ ValueDescriptor *BinaryExprNode::evaluate(const SymbolTable &symbolTable) const 
     ValueDescriptor *leftValue = leftOperand->evaluate(symbolTable);
     ValueDescriptor *rightValue = rightOperand->evaluate(symbolTable);
 
-    const bool leftIsDouble = leftValue->type() == ValueDescriptor::Type::doubleValue;
+    const bool leftIsString = leftValue->type() == ValueDescriptor::Type::string;
+    const bool rightIsString = rightValue->type() == ValueDescriptor::Type::string;
 
+    if (leftIsString || rightIsString) {
+        ValueDescriptor *result = nullptr;
+
+        if (leftIsString && rightIsString) {
+            const std::string &left = dynamic_cast<StringValueDescriptor *>(leftValue)->value();
+            const std::string &right = dynamic_cast<StringValueDescriptor *>(rightValue)->value();
+
+            if (token().isAdditionOperator())
+                result = new StringValueDescriptor{left + right};
+            else if (token().isEqualToOperator())
+                result = new BooleanValueDescriptor{left == right};
+            else if (token().isNotEqualToOperator())
+                result = new BooleanValueDescriptor{left != right};
+            else if (token().isLessThanOperator())
+                result = new BooleanValueDescriptor{left < right};
+            else if (token().isGreaterThanOperator())
+                result = new BooleanValueDescriptor{left > right};
+            else if (token().isLessOrEqualToOperator())
+                result = new BooleanValueDescriptor{left <= right};
+            else if (token().isGreaterOrEqualToOperator())
+                result = new BooleanValueDescriptor{left >= right};
+        }
+        else {
+            if (token().isEqualToOperator())
+                result  = new BooleanValueDescriptor{false};
+            else if (token().isNotEqualToOperator())
+                result = new BooleanValueDescriptor{true};
+        }
+        delete leftValue;
+        delete rightValue;
+
+        if (result != nullptr)
+            return result;
+
+        throw std::runtime_error("Invalid operation involving a string");
+    }
+
+    const bool leftIsBoolean = leftValue->type() == ValueDescriptor::Type::boolean;
+    const bool rightIsBoolean = rightValue->type() == ValueDescriptor::Type::boolean;
+
+    if (leftIsBoolean || rightIsBoolean) {
+        ValueDescriptor *result = nullptr;
+
+        if (leftIsBoolean && rightIsBoolean) {
+            const bool left = dynamic_cast<BooleanValueDescriptor *>(leftValue)->value();
+            const bool right = dynamic_cast<BooleanValueDescriptor *>(rightValue)->value();
+
+            if (token().isEqualToOperator())
+                result = new BooleanValueDescriptor{left == right};
+            else if (token().isNotEqualToOperator())
+                result = new BooleanValueDescriptor{left != right};
+        }
+        else {
+            if (token().isEqualToOperator())
+                result = new BooleanValueDescriptor{false};
+            else if (token().isNotEqualToOperator())
+                result = new BooleanValueDescriptor{true};
+        }
+        delete leftValue;
+        delete rightValue;
+
+        if (result != nullptr)
+            return result;
+        throw std::runtime_error("Invalid operation involving a boolean");
+    }
+
+    const bool leftIsDouble = leftValue->type() == ValueDescriptor::Type::doubleValue;
     const bool rightIsDouble = rightValue->type() == ValueDescriptor::Type::doubleValue;
 
     if (leftIsDouble || rightIsDouble) {
@@ -95,10 +163,28 @@ ValueDescriptor *BinaryExprNode::evaluate(const SymbolTable &symbolTable) const 
             throw std::runtime_error("Division by zero");
         result = new DoubleValueDescriptor{static_cast<double>(left) / static_cast<double>(right)};
     }
+    else if (token().isFloorDivisionOperator()) {
+        if (right == 0)
+            throw std::runtime_error("Floor division by zero");
+
+        auto quotient = left / right;
+        auto remainder = left % right;
+
+        if (remainder != 0 && ((remainder < 0) != (right < 0))) {
+            --quotient;
+        }
+        result = new IntegerValueDescriptor{quotient};
+    }
     else if (token().isModuloOperator()) {
         if (right == 0)
-            throw std::runtime_error("Division by zero");
-        result = new IntegerValueDescriptor{left % right};
+            throw std::runtime_error("Modulo by zero");
+
+        auto remainder = left % right;
+
+        if (remainder != 0 && ((remainder < 0) != (right < 0))) {
+            remainder += right;
+        }
+        result = new IntegerValueDescriptor{remainder};
     }
     else if (token().isEqualToOperator())
         result = new BooleanValueDescriptor{left == right};
@@ -210,6 +296,28 @@ void StringLiteral::print() const {
 
 ValueDescriptor *StringLiteral::evaluate(const SymbolTable &) const {
     return new StringValueDescriptor{token().stringValue()};
+}
+
+StringConversion::StringConversion(ExprNode *expression) : ExprNode{Token{}}, expression(expression){}
+
+StringConversion::~StringConversion() {
+    delete expression;
+}
+
+void StringConversion::print() const {
+    std::cout << "str(";
+    expression->print();
+    std::cout << ")";
+}
+
+ValueDescriptor *StringConversion::evaluate(const SymbolTable &symbolTable) const {
+
+    ValueDescriptor *value = expression->evaluate(symbolTable);
+
+    ValueDescriptor *result = new StringValueDescriptor{value->toString()};
+
+    delete value;
+    return result;
 }
 
 Variable::Variable(Token token) : ExprNode{std::move(token)} {}

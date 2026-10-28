@@ -75,6 +75,18 @@ class StringLiteral final : public ExprNode {
         [[nodiscard]] ValueDescriptor *evaluate(const SymbolTable &symbolTable) const override;
 };
 
+class StringConversion final : public ExprNode {
+    public:
+        explicit StringConversion(ExprNode *expression);
+        ~StringConversion() override;
+
+        void print() const override;
+        [[nodiscard]] ValueDescriptor *evaluate(const SymbolTable &symbolTable) const override;
+
+    private:
+        ExprNode *expression;
+};
+
 class Variable final : public ExprNode {
 public:
     explicit Variable(Token token);

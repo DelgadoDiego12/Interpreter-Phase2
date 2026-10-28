@@ -262,6 +262,7 @@ ExprNode *Parser::arithTerm() {
 
     while (token.isMultiplicationOperator() ||
            token.isDivisionOperator() ||
+           token.isFloorDivisionOperator() ||
            token.isModuloOperator()) {
         ExprNode *right = arithPrimary();
         left = new BinaryExprNode(token, left, right);
@@ -286,11 +287,30 @@ ExprNode *Parser::arithAtom() {
     // <arith-atom> -> <id> | 'str'(' <rel-expr> ')' | '(' <rel-expr> ')' | <literal>
     Token token = tokenizer.getToken();
 
-    if (token.isInteger())
-        return new IntegerLiteral(token);
+    if (token.isInteger() || token.isDouble() || token.isTrueKeyword() || token.isFalseKeyword()
+        || token.isString()) {
+
+        tokenizer.ungetToken();
+        return literal();
+    }
+
     if (token.isIdentifier())
         return new Variable(token);
-    //needs str ( <rel-expr> )
+    if (token.isSTRKeyword()) {
+        Token openParen = tokenizer.getToken();
+
+        if (!openParen.isOpenParen())
+            die("Parser::arithAtom", "expected '(' after 'str'", openParen);
+
+        ExprNode *argument = relExpr();
+        Token closeParen = tokenizer.getToken();
+
+        if (!closeParen.isCloseParen()) {
+            delete argument;
+            die("Parser::arithAtom", "expected ')' after str argument", closeParen);
+        }
+        return new StringConversion{argument};
+    }
     if (token.isOpenParen()) {
         ExprNode *expression = relExpr();
         Token closeParen = tokenizer.getToken();
@@ -299,7 +319,7 @@ ExprNode *Parser::arithAtom() {
         return expression;
     }
 
-    die("Parser::arithAtom", "expected an identifier, integer, or '('", token);
+    die("Parser::arithAtom", "expected an identifier, literal, or '('", token);
 }
 
 ExprNode *Parser::literal() {

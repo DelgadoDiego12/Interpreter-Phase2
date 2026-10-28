@@ -44,6 +44,7 @@ public:
     [[nodiscard]] bool isSubtractionOperator() const { return _symbol == "-"; }
     [[nodiscard]] bool isModuloOperator() const { return _symbol == "%"; }
     [[nodiscard]] bool isDivisionOperator() const { return _symbol == "/"; }
+    [[nodiscard]] bool isFloorDivisionOperator() const { return _symbol == "//"; }
 
     [[nodiscard]] bool isLessThanOperator() const { return _symbol == "<"; }
     [[nodiscard]] bool isGreaterThanOperator() const { return _symbol == ">"; }
@@ -79,12 +80,12 @@ public:
     [[nodiscard]] bool isSTRKeyword() const {return _keyword == Keyword::strKeyword; }
     [[nodiscard]] Keyword keyword() const { return _keyword; }
 
-    void setIntegerValue(int value) {
+    void setIntegerValue(std::int64_t value) {
         _integerValue = value;
         _isInteger = true;
     }
     [[nodiscard]] bool isInteger() const { return _isInteger; }
-    [[nodiscard]] int integerValue() const { return _integerValue; }
+    [[nodiscard]] std::int64_t integerValue() const { return _integerValue; }
     
     void setDoubleValue(double value) {
         _doubleValue = value;
@@ -113,7 +114,7 @@ private:
     bool _indent{false};
     bool _dedent{false};
     std::string _symbol{'\0'};
-    int _integerValue{0};
+    std::int64_t _integerValue{0};
     std::string _stringValue{};
     double _doubleValue{0.0};
     std::size_t _lineNumber{0};

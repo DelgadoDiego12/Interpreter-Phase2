@@ -41,10 +41,14 @@ void Token::print(std::ostream &output) const {
         output << " - ";
     else if (isModuloOperator())
         output << " % ";
+    else if (isFloorDivisionOperator())
+        output << " // ";
     else if (isDivisionOperator())
         output << " / ";
     else if (isIdentifier())
         output << identifier();
+    else if (isString())
+        output << '"' << stringValue() << '"';
     else if (isInteger())
         output << integerValue();
     else if (isDouble())

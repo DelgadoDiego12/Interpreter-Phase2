@@ -266,30 +266,47 @@ Token Tokenizer::getToken() {
                 std::exit(EXIT_FAILURE);
             }
         } else {
-            token.setIntegerValue(std::stoi(digits));
+            try {
+                token.setIntegerValue(static_cast<std::int64_t>(std::stoll(digits)));
+            } catch (const std::out_of_range &) {
+                std::cerr << "Integer literal is outside the range of std::int64_t.\n";
+                std::exit(EXIT_FAILURE);
+            }
         }
     }
 
     else if (character == '\"' || character == '\'') {
         char quote = character;
-        char next = inputStream.peek();
         std::string value;
-        while(next != std::char_traits<char>::eof() && next != quote) {
-            if (isValidStringChar(character)) {
-                value += character;
+        bool closed = false;
+
+        while(inputStream.peek() != std::char_traits<char>::eof()) {
+            char nextCharacter = static_cast<char>(inputStream.peek());
+
+            if (nextCharacter == quote) {
+                getCharacter(nextCharacter);
+                closed = true;
+                break;
             }
-            else {
-                std::cerr << "Invalid character";
+            if (!isValidStringChar(nextCharacter)) {
+                std::cerr << "Invalid character in string at line " << token.lineNumber()
+                << ", column" << token.columnNumber() << ".\n";
                 std::exit(EXIT_FAILURE);
             }
+            getCharacter(nextCharacter);
+            value += nextCharacter;
         }
-        if (next == quote) {
-            token.setStringValue(std::move(value));
+        if (!closed) {
+            std::cerr << "Unterminated string at line " << token.lineNumber() << ".\n";
+            std::exit(EXIT_FAILURE);
         }
+        token.setStringValue(std::move(value));
     }
-    else if ((character == '=' || character == '!' || character == '<' || character == '>') && (nextChar == '=')){
+    else if (((character == '=' || character == '!' || character == '<' || character == '>') && nextChar == '=' )
+        || (character == '/' && nextChar == '/')) {
+
         getCharacter(nextChar);
-        std::string twoChar = ""; //creating string for 2 character operators
+        std::string twoChar; //creating string for 2 character operators
         twoChar = character;
         twoChar += nextChar;
         token.setSymbol(twoChar);
@@ -317,6 +334,8 @@ Token Tokenizer::getToken() {
             token.setKeyword(Keyword::trueKeyword);
         else if (identifier == "False")
             token.setKeyword(Keyword::falseKeyword);
+        else if (identifier == "str")
+            token.setKeyword(Keyword::strKeyword);
         else
             token.setIdentifier(std::move(identifier));
     } else {

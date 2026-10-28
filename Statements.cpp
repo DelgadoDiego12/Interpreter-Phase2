@@ -54,7 +54,9 @@ PrintStatement::~PrintStatement() {
 }
 
 void PrintStatement::evaluate(SymbolTable &symbolTable) const {
-    std::cout << expression->evaluate(symbolTable) << '\n';
+    ValueDescriptor *value = expression->evaluate(symbolTable);
+    std::cout << value->toString() << '\n';
+    delete value;
 }
 
 void PrintStatement::print() const {
