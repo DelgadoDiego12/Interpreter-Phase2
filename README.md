@@ -1,14 +1,13 @@
 Collaborators: Diego Delgado & Gabriela Carbajal Ortiz
 
-Diego worked on Feature 1.
+Diego worked on support for doubles, while assisting with strings.
 
-Gabriela worked on Feature 2.
+Gabriela worked on the support for strings and booleans.
 
-Worked together on updating parser for the new grammar rules
-
+Both worked on ValueDescriptors, the Parser, token, tokenizer, and expr files.
 
 AI Use:
 
-Diego - I used ChatGpt to grasp the using of a stack when relating to the indentation levels.
+Diego - I used ChatGpt to understand pointer ownership when it comes to the  ValueDescriptors and the symbol table. No code was generated using AI
 
 Gabriela - Used ChatGPT to explain the difference between the range classes and what their limitations are.
