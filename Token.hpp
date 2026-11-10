@@ -15,7 +15,18 @@ enum class Keyword {
     rangeKeyword,
     trueKeyword,
     falseKeyword,
-    strKeyword
+    strKeyword,
+    ifKeyword,
+    elifKeyword,
+    elseKeyword,
+    whileKeyword,
+    inputKeyword,
+    intKeyword,
+    floatKeyword,
+    lenKeyword,
+    splitKeyword,
+    appendKeyword,
+    popKeyword
 };
 
 class Token {
@@ -75,10 +86,22 @@ public:
     [[nodiscard]] bool isPrintKeyword() const { return _keyword == Keyword::printKeyword; }
     [[nodiscard]] bool isInKeyword() const { return _keyword == Keyword::inKeyword; } 
     [[nodiscard]] bool isRangeKeyword() const { return _keyword == Keyword::rangeKeyword; } 
-    [[nodiscard]] bool isTrueKeyword() const { return _keyword == Keyword::trueKeyword; } //
-    [[nodiscard]] bool isFalseKeyword() const { return _keyword == Keyword::falseKeyword; } //
-    [[nodiscard]] bool isSTRKeyword() const {return _keyword == Keyword::strKeyword; }
+    [[nodiscard]] bool isTrueKeyword() const { return _keyword == Keyword::trueKeyword; } 
+    [[nodiscard]] bool isFalseKeyword() const { return _keyword == Keyword::falseKeyword; } 
+    [[nodiscard]] bool isSTRKeyword() const { return _keyword == Keyword::strKeyword; }
+    [[nodiscard]] bool isIfKeyword() const { return _keyword == Keyword::ifKeyword; }
+    [[nodiscard]] bool isElifKeyword() const { return _keyword == Keyword::elifKeyword; }
+    [[nodiscard]] bool isElseKeyword() const { return _keyword == Keyword::elseKeyword; }
+    [[nodiscard]] bool isWhileKeyword() const { return _keyword == Keyword::whileKeyword; }
+    [[nodiscard]] bool isInputKeyword() const { return _keyword == Keyword::inputKeyword; }
+    [[nodiscard]] bool isIntKeyword() const { return _keyword == Keyword::intKeyword; }
+    [[nodiscard]] bool isFloatKeyword() const { return _keyword == Keyword::floatKeyword; }
+    [[nodiscard]] bool isLenKeyword() const { return _keyword == Keyword::lenKeyword; }
+    [[nodiscard]] bool isSplitKeyword() const { return _keyword == Keyword::splitKeyword; }
+    [[nodiscard]] bool isAppendKeyword() const { return _keyword == Keyword::appendKeyword; }
+    [[nodiscard]] bool isPopKeyword() const { return _keyword == Keyword::popKeyword; }
     [[nodiscard]] Keyword keyword() const { return _keyword; }
+
 
     void setIntegerValue(std::int64_t value) {
         _integerValue = value;

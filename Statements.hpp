@@ -67,35 +67,37 @@ private:
 
 };
 
-/*
-class ForStatement final : public Statement {
+class AppendStatement final : public Statement {
 public:
-    ForStatement(AssignmentStatement *initialization, ExprNode *condition, AssignmentStatement *assignment, Statements *loopBody);
-    ~ForStatement() override;
+    AppendStatement(ExprNode *first, ExprNode *second);
+    ~AppendStatement() override;
     void evaluate(SymbolTable &symbolTable) const override;
     void print() const override;
 private:
-    AssignmentStatement *initialization;
-    ExprNode *condition;
-    AssignmentStatement *assignment;
-    Statements *loopBody;
-
+    ExprNode *right;
+    ExprNode *left;
 };
 
-
-class EvaluatedRange {
+class IfStatement final : public Statement {
 public:
-    EvaluatedRange(int start, int stop, int step);
-    [[nodiscard]] int start() const;
-    [[nodiscard]] int stop() const;
-    [[nodiscard]] int step() const;
-    [[nodiscard]] bool hasIteration() const;
-    [[nodiscard]] bool shouldContinue(int nextValue) const;
-private:
-    int start_;
-    int stop_;
-    int step_;
+    IfStatement(ExprNode *condition, Statements *body);
+    ~IfStatement() override;
+    void evaluate(SymbolTable &symbolTable) const override;
+    void print() const override;
+private: 
+    ExprNode* condition;
+    Statements *body;
 };
-*/
+
+class WhileStatement final : public Statement {
+public:
+    WhileStatement(ExprNode *condition, Statements *body);
+    ~WhileStatement() override;
+    void evaluate(SymbolTable &symbolTable) const override;
+    void print() const override;
+private:
+    ExprNode *condition;
+    Statements *body;
+};
 
 #endif // EXPRINTER_STATEMENTS_HPP

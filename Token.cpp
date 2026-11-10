@@ -25,6 +25,28 @@ void Token::print(std::ostream &output) const {
         output << "False";
     else if (isSTRKeyword())
         output << "str";
+    else if (isIfKeyword())
+        output << "if";
+    else if (isElifKeyword())
+        output << "elif";
+    else if (isElseKeyword())
+        output << "else";
+    else if (isWhileKeyword())
+        output << "while";
+    else if (isInputKeyword())
+        output << "input";
+    else if (isIntKeyword())
+        output << "int";
+    else if (isFloatKeyword())
+        output << "float";
+    else if (isLenKeyword())
+        output << "len";
+    else if (isSplitKeyword())
+        output << "split";
+    else if (isAppendKeyword())
+        output << "append";
+    else if (isPopKeyword())
+        output << "pop";
     else if (isOpenParen())
         output << '(';
     else if (isCloseParen())
@@ -77,6 +99,8 @@ void Token::print(std::ostream &output) const {
         output << " \" ";
     else if (isSingleQuotMark())
         output << " \' ";
+
     else
         output << "uninitialized token";
 }
+

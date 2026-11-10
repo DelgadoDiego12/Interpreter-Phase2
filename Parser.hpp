@@ -20,7 +20,10 @@ public:
     Statement *compoundStatement();
     AssignmentStatement *assignmentStatement();
     PrintStatement *printStatement();
+    AppendStatement *appendStatement(); //
     ForStatement *forStatement();
+    IfStatement *ifStatement(); //
+    WhileStatement *whileStatement(); //
 
     ExprNode *relExpr();
     ExprNode *relTerm();
@@ -28,8 +31,13 @@ public:
     ExprNode *arithExpr();
     ExprNode *arithTerm();
     ExprNode *arithPrimary();
-    ExprNode *arithAtom();
+    ExprNode *postfixExpr();
+    ExprNode *atom();
     ExprNode *literal();
+    ExprNode *inputExpr();
+    ExprNode *oneArgCall();
+    ExprNode *oneArgExpr(Token token, ExprNode *argument);
+    ExprNode *listLiteral();
 
 private:
     Tokenizer &tokenizer;
@@ -39,4 +47,4 @@ private:
                           const Token &token) const;
 };
 
-#endif // EXPRINTER_PARSER_HPP
+#endif // EXPRINTER_PARSER_HPP;

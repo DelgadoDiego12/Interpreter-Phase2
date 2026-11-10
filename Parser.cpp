@@ -33,7 +33,9 @@ Statements *Parser::statements() {
 
     Token next = tokenizer.getToken();
 
-    while (next.isIdentifier() || next.isPrintKeyword() || next.isForKeyword()) {
+    while (next.isIdentifier() || next.isPrintKeyword() || next.isForKeyword()  
+                               || next.isIfKeyword() || next.isElifKeyword() 
+                               || next.isElseKeyword() || next.isWhileKeyword()) {
         tokenizer.ungetToken();
         parsedStatements->addStatement(statement());
         next = tokenizer.getToken();
@@ -81,7 +83,8 @@ Statement *Parser::statement() {
         }
         return simple;
     }
-    if (token.isForKeyword()) {
+    if (token.isForKeyword() || token.isIfKeyword() || token.isElifKeyword() 
+                             || token.isElseKeyword() || token.isWhileKeyword()) {
         tokenizer.ungetToken();
         return compoundStatement();
     }
@@ -90,7 +93,8 @@ Statement *Parser::statement() {
 
 Statement *Parser::simpleStatement() {
     //<simple-statement> -> <assignment-statement>
-    //                     | <print-statement>
+    //                      |<print-statement>
+    //                      |<append-statement>
     Token token = tokenizer.getToken();
     if (token.isIdentifier()) {
         tokenizer.ungetToken();
@@ -100,13 +104,32 @@ Statement *Parser::simpleStatement() {
         tokenizer.ungetToken();
         return printStatement();
     }
+    if (token.isAppendKeyword()) {
+        tokenizer.ungetToken();
+        return appendStatement();
+    }
     die("Parser::simpleStatement", "expected assignment or print statement", token);
 
 }
 
 Statement *Parser::compoundStatement() {
     //<compound-statement> -> <for-statement>
-    return forStatement();
+    //                       |<if-statement>
+    //                       |<while-statement>
+    Token token = tokenizer.getToken();
+    if (token.isForKeyword()) {
+        tokenizer.ungetToken();
+        return forStatement();
+    }
+    if (token.isIfKeyword() || token.isElseKeyword() || token.isElifKeyword()) {
+        tokenizer.ungetToken();
+        return ifStatement();
+    }
+    if (token.isWhileKeyword()) {
+        tokenizer.ungetToken();
+        return whileStatement();
+    }
+    die("Parser::compuntStatement", "expected 'for', 'if', or 'while'", token);
 }
 
 AssignmentStatement *Parser::assignmentStatement() {
@@ -131,6 +154,29 @@ PrintStatement *Parser::printStatement() {
         die ("Parser::printStatement", "expected 'print'", printToken);
     }
     return new PrintStatement(relExpr());
+}
+
+AppendStatement *Parser::appendStatement() {
+    //<append-statement> -> append ( <rel-expr> , <rel-expr> )
+    Token appendToken = tokenizer.getToken();
+    if (!appendToken.isAppendKeyword()) {
+        die ("Parser::appendStatement", "expected 'append'", appendToken);
+    }
+    Token openParenToken = tokenizer.getToken();
+    if (!openParenToken.isOpenParen()) {
+        die("Parser::appendStatement", "expected '('", openParenToken);
+    }
+    ExprNode *expression1 = relExpr();
+    Token commaToken = tokenizer.getToken();
+    if (!commaToken.isComma()) {
+        die("Parser::appendStatement", "expected ','", commaToken);
+    }
+    ExprNode *expression2 = relExpr();
+    Token closeParen = tokenizer.getToken();
+    if (!closeParen.isCloseParen()){
+        die("Parser::appendStatement", "expected ')'", closeParen);
+    }
+    return new AppendStatement(expression1, expression2);
 }
 
 RangeExpression *Parser::rangeExpression() {
@@ -199,6 +245,44 @@ ForStatement *Parser::forStatement() {
 
 }
 
+IfStatement *Parser::ifStatement() {
+    //<if-statement> -> if <rel-expr> : <suite>
+    Token conditionalToken = tokenizer.getToken();
+    if (!conditionalToken.isIfKeyword() && !conditionalToken.isElifKeyword() && !conditionalToken.isElseKeyword()) {
+        die("Parser::ifStatement", "expected 'if/elif/else'", conditionalToken);
+    }
+    if (conditionalToken.isElseKeyword()) {
+        Token colonToken = tokenizer.getToken();
+        if (!colonToken.isColon()) {
+            die("Parser::ifStatement", "expected ':'", colonToken);
+        }
+        Statements *body = suite();
+        return new IfStatement(body);
+    }
+    ExprNode *condition = relExpr();
+    Token colonToken = tokenizer.getToken();
+    if (!colonToken.isColon()) {
+        die("Parser::ifStatement", "expected ':'", colonToken);
+    }
+    Statements *body = suite();
+    return new IfStatement(condition, body);
+}
+
+WhileStatement *Parser::whileStatement() {
+    //<while-statement> -> while <rel-expr> : <suite>
+    Token whileToken = tokenizer.getToken();
+    if (!whileToken.isWhileKeyword()) {
+        die ("Parser::whileStatement", "expected 'while'", whileToken);
+    }
+    ExprNode *condition = relExpr();
+    Token colonToken = tokenizer.getToken();
+    if (!colonToken.isColon()) {
+        die ("Parser::whileStatement", "expected 'colon'", whileToken);
+    }
+    Statements *body = suite();
+    return new WhileStatement(condition, body);
+}
+
 ExprNode *Parser::relExpr() {
     // <rel-expr> -> <rel-term> [ <equality-op> <rel-term> ]
     // The optional equality operation is left for students to implement.
@@ -236,7 +320,6 @@ ExprNode *Parser::relTerm() {
 
 ExprNode *Parser::relPrimary() {
     // <rel-primary> -> <arith-expr>
-
     return arithExpr();
 }
 
@@ -274,17 +357,33 @@ ExprNode *Parser::arithTerm() {
 }
 
 ExprNode *Parser::arithPrimary() {
-    // <arith-primary> -> [ <sign> ] <arith-atom>
+    // <arith-primary> -> [ <sign> ] <postfix-expression>
     Token token = tokenizer.getToken();
     if (token.isAdditionOperator() || token.isSubtractionOperator())
-        return new UnaryExprNode(token, arithAtom());
+        return new UnaryExprNode(token, atom());
 
     tokenizer.ungetToken();
-    return arithAtom();
+    return postfixExpr();
 }
 
-ExprNode *Parser::arithAtom() {
-    // <arith-atom> -> <id> | 'str'(' <rel-expr> ')' | '(' <rel-expr> ')' | <literal>
+ExprNode *Parser::postfixExpr(){ //unfinished
+    //<postfix-expression> <atom> [ [ <rel-expr> ] ]
+    ExprNode *atomToken = atom();
+    Token openBrackToken = tokenizer.getToken();
+    if (!openBrackToken.isOpenBracket()) {
+        die("Parser::postfixExpr", "expected '['", openBrackToken);
+    }
+    ExprNode *expression = relExpr();
+    Token closeBrackToken = tokenizer.getToken();
+    if (!closeBrackToken.isCloseBracket()) {
+        delete expression;
+        die("Parser::postfixEcpr", "expected ']'", closeBrackToken);
+    }
+    return atom;
+}
+
+ExprNode *Parser::atom() { //missing list literal
+    //<atom> -> <id> | <literal> | <list-literal> | <input-expression> | <one-argument-call> | (<rel-expr>)
     Token token = tokenizer.getToken();
 
     if (token.isInteger() || token.isDouble() || token.isTrueKeyword() || token.isFalseKeyword()
@@ -294,32 +393,25 @@ ExprNode *Parser::arithAtom() {
         return literal();
     }
 
-    if (token.isIdentifier())
+    if (token.isIdentifier()) {
         return new Variable(token);
-    if (token.isSTRKeyword()) {
-        Token openParen = tokenizer.getToken();
-
-        if (!openParen.isOpenParen())
-            die("Parser::arithAtom", "expected '(' after 'str'", openParen);
-
-        ExprNode *argument = relExpr();
-        Token closeParen = tokenizer.getToken();
-
-        if (!closeParen.isCloseParen()) {
-            delete argument;
-            die("Parser::arithAtom", "expected ')' after str argument", closeParen);
-        }
-        return new StringConversion{argument};
     }
     if (token.isOpenParen()) {
         ExprNode *expression = relExpr();
         Token closeParen = tokenizer.getToken();
         if (!closeParen.isCloseParen())
-            die("Parser::arithAtom", "expected ')'", closeParen);
+            die("Parser::atom", "expected ')'", closeParen);
         return expression;
     }
-
-    die("Parser::arithAtom", "expected an identifier, literal, or '('", token);
+    if (token.isIntKeyword() || token.isFloatKeyword() || token.isSTRKeyword() || token.isLenKeyword() || token.isSplitKeyword() || token.isPopKeyword()) {
+        tokenizer.ungetToken();
+        return oneArgCall();
+    }
+    if (token.isInputKeyword()) {
+        tokenizer.ungetToken();
+        return inputExpr();
+    }
+    die("Parser::atom", "expected an identifier, literal, or '('", token);
 }
 
 ExprNode *Parser::literal() {
@@ -334,4 +426,73 @@ ExprNode *Parser::literal() {
     if (token.isString())
         return new StringLiteral(token);
     die("Parser::literal", "expected a literal", token);
+}
+
+
+ExprNode *Parser::inputExpr(){
+        //<input-expr> -> input ( )
+        Token token = tokenizer.getToken();
+        if (!token.isInputKeyword()) {
+            die("Parser::inputExpr", "expected 'input'", token);
+        }
+        Token openParenToken = tokenizer.getToken();
+        if (!openParenToken.isOpenParen()) {
+            die("Parser::inputExpr", "expected '('", openParenToken);
+        }
+        Token closeParenToken = tokenizer.getToken();
+        if (!closeParenToken.isCloseParen()) {
+            die("Parser::inputExpr", "expected ')'", closeParenToken);
+        }
+        return new UnaryExprNode(token, postfixExpr());
+}
+
+ExprNode *Parser::oneArgCall() {
+
+    //try to reuse the parenthesis code for all 
+    Token nameToken = tokenizer.getToken();
+    if (!(nameToken.isIntKeyword() || nameToken.isFloatKeyword() || nameToken.isSTRKeyword() || nameToken.isLenKeyword() || nameToken.isSplitKeyword() || nameToken.isPopKeyword())) {
+        die("Parser::oneArgCall", "expected 'int', 'float', 'str', 'len', 'split', or 'pop'", nameToken);
     }
+    
+    Token openParen = tokenizer.getToken();
+
+    if (!openParen.isOpenParen())
+        die("Parser::atom", "expected '('", openParen);
+
+    ExprNode *argument = relExpr();
+    Token closeParen = tokenizer.getToken();
+
+    if (!closeParen.isCloseParen()) {
+        delete argument;
+        die("Parser::oneArgCall", "expected ')'", closeParen);
+    }
+    return oneArgExpr(nameToken, argument);
+    
+}
+
+ExprNode *Parser::oneArgExpr(Token token, ExprNode *argument) {
+
+    if (token.isSTRKeyword()) {
+        return new StringConversion{argument};
+    }
+    if (token.isIntKeyword()) {
+        return new IntegerConversion{argument};
+    }
+    if (token.isFloatKeyword()) {
+        return new FloatConversion{argument};
+    }
+    if (token.isLenKeyword()) {
+        return new LengthConversion{argument};
+    }
+    if (token.isSplitKeyword()) {
+        return new SplitConversion{argument};
+    }
+    if (token.isPopKeyword()) {
+        return new PopConversion{argument};
+    }
+    die("Parser::oneArgExpr", "expected 'int', 'float', 'str', 'len', 'split', or 'pop'", token);
+}
+
+ExprNode *Parser::listLiteral() {
+
+}
