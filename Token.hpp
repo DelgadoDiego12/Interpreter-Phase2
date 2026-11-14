@@ -48,6 +48,8 @@ public:
 
     [[nodiscard]] bool isOpenParen() const { return _symbol == "("; }
     [[nodiscard]] bool isCloseParen() const { return _symbol == ")"; }
+    [[nodiscard]] bool isOpenBracket() const { return _symbol == "["; }
+    [[nodiscard]] bool isCloseBracket() const { return _symbol == "]"; }
     [[nodiscard]] bool isSemicolon() const { return _symbol == ";"; }
     [[nodiscard]] bool isAssignmentOperator() const { return _symbol == "="; }
     [[nodiscard]] bool isMultiplicationOperator() const { return _symbol == "*"; }

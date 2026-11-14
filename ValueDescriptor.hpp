@@ -3,6 +3,8 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
+#include <cstddef>
 
 class ValueDescriptor {
 public:
@@ -10,7 +12,8 @@ public:
         integer,
         doubleValue,
         boolean,
-        string
+        string,
+        list
     };
 
     virtual ~ValueDescriptor() = default;
@@ -75,6 +78,60 @@ public:
 
 private:
     std::string stringValue;
+};
+
+enum class ListElementType {
+    unset,
+    numeric,
+    boolean,
+    string
+};
+
+class ListObject {
+public:
+    explicit ListObject(ListElementType initialType = ListElementType::unset);
+    ~ListObject();
+
+    ListObject(const ListObject &other) = delete;
+    ListObject &operator=(const ListObject &other) = delete;
+
+    void retain();
+
+    [[nodiscard]] bool release();
+    [[nodiscard]] std::size_t referenceCount() const;
+    [[nodiscard]] std::size_t size() const;
+    [[nodiscard]] ListElementType elementType() const;
+    [[nodiscard]] ValueDescriptor *cloneElementAt(std::size_t index) const;
+
+    void setElement(std::size_t index, ValueDescriptor *value);
+    void append(ValueDescriptor *value);
+
+    [[nodiscard]] ValueDescriptor *pop();
+
+private:
+    std::size_t references{0};
+    ListElementType category{ListElementType::unset};
+    std::vector<ValueDescriptor *> elements;
+};
+
+class ListValueDescriptor final : public ValueDescriptor {
+public:
+    explicit ListValueDescriptor(ListObject *object);
+    ~ListValueDescriptor() override;
+
+    ListValueDescriptor(const ListValueDescriptor &other) = delete;
+    ListValueDescriptor &operator=(const ListValueDescriptor &other) = delete;
+
+    [[nodiscard]] Type type() const override;
+    [[nodiscard]] std::string typeName() const override;
+    [[nodiscard]] std::string toString() const override;
+    [[nodiscard]] ValueDescriptor *clone() const override;
+
+    [[nodiscard]] ListObject *object();
+    [[nodiscard]] const ListObject *object() const;
+
+private:
+    ListObject *listObject;
 };
 
 #endif

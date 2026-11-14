@@ -78,15 +78,20 @@ private:
     ExprNode *left;
 };
 
+struct IfBranch {
+    ExprNode *condition;
+    Statements *body;
+};
+
 class IfStatement final : public Statement {
 public:
-    IfStatement(ExprNode *condition, Statements *body);
+    IfStatement(std::vector<IfBranch> branches, Statements *elseBody);
     ~IfStatement() override;
     void evaluate(SymbolTable &symbolTable) const override;
     void print() const override;
-private: 
-    ExprNode* condition;
-    Statements *body;
+private:
+    std::vector<IfBranch> branches;
+    Statements *elseBody;
 };
 
 class WhileStatement final : public Statement {

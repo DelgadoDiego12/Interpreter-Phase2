@@ -99,7 +99,10 @@ void Token::print(std::ostream &output) const {
         output << " \" ";
     else if (isSingleQuotMark())
         output << " \' ";
-
+    else if (isOpenBracket())
+        output << "[";
+    else if (isCloseBracket())
+        output << "]";
     else
         output << "uninitialized token";
 }

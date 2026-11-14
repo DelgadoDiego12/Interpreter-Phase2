@@ -1,6 +1,8 @@
 #include <cstdlib>
 #include <iostream>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "Parser.hpp"
 
@@ -33,8 +35,8 @@ Statements *Parser::statements() {
 
     Token next = tokenizer.getToken();
 
-    while (next.isIdentifier() || next.isPrintKeyword() || next.isForKeyword()  
-                               || next.isIfKeyword() || next.isElifKeyword() 
+    while (next.isIdentifier() || next.isPrintKeyword() || next.isForKeyword()
+                               || next.isIfKeyword() || next.isElifKeyword()
                                || next.isElseKeyword() || next.isWhileKeyword()) {
         tokenizer.ungetToken();
         parsedStatements->addStatement(statement());
@@ -83,8 +85,7 @@ Statement *Parser::statement() {
         }
         return simple;
     }
-    if (token.isForKeyword() || token.isIfKeyword() || token.isElifKeyword() 
-                             || token.isElseKeyword() || token.isWhileKeyword()) {
+    if (token.isForKeyword() || token.isIfKeyword()|| token.isWhileKeyword()) {
         tokenizer.ungetToken();
         return compoundStatement();
     }
@@ -121,7 +122,7 @@ Statement *Parser::compoundStatement() {
         tokenizer.ungetToken();
         return forStatement();
     }
-    if (token.isIfKeyword() || token.isElseKeyword() || token.isElifKeyword()) {
+    if (token.isIfKeyword()) {
         tokenizer.ungetToken();
         return ifStatement();
     }
@@ -246,26 +247,54 @@ ForStatement *Parser::forStatement() {
 }
 
 IfStatement *Parser::ifStatement() {
-    //<if-statement> -> if <rel-expr> : <suite>
-    Token conditionalToken = tokenizer.getToken();
-    if (!conditionalToken.isIfKeyword() && !conditionalToken.isElifKeyword() && !conditionalToken.isElseKeyword()) {
-        die("Parser::ifStatement", "expected 'if/elif/else'", conditionalToken);
+    //<if-statement> -> if <rel-expr> : <suite> { "elif" <rel-expr> : <suite> } [ "else" : <suite> ]
+    Token ifToken = tokenizer.getToken();
+
+    if (!ifToken.isIfKeyword()) {
+        die("Parser::ifStatement", "expected 'if'", ifToken);
     }
-    if (conditionalToken.isElseKeyword()) {
-        Token colonToken = tokenizer.getToken();
-        if (!colonToken.isColon()) {
-            die("Parser::ifStatement", "expected ':'", colonToken);
-        }
-        Statements *body = suite();
-        return new IfStatement(body);
-    }
+
+    std::vector<IfBranch> branches;
+    Statements *elseBody = nullptr;
+
     ExprNode *condition = relExpr();
     Token colonToken = tokenizer.getToken();
+
     if (!colonToken.isColon()) {
-        die("Parser::ifStatement", "expected ':'", colonToken);
+        delete condition;
+        die("Parser::ifStatement", "expected ':' after if condition", colonToken);
     }
+
     Statements *body = suite();
-    return new IfStatement(condition, body);
+    branches.push_back({condition, body});
+
+    Token next = tokenizer.getToken();
+
+    while (next.isElifKeyword()) {
+        ExprNode *elifCondition = relExpr();
+        Token elifColon = tokenizer.getToken();
+
+        if (!elifColon.isColon()) {
+            delete elifCondition;
+            die("Parser::ifStatement", "expected ':' after elif condition", elifColon);
+        }
+
+        Statements *elifBody = suite();
+        branches.push_back({elifCondition, elifBody});
+        next = tokenizer.getToken();
+    }
+    if (next.isElseKeyword()) {
+        Token elseColon = tokenizer.getToken();
+
+        if (!elseColon.isColon()) {
+            die("Parser::ifStatement", "expected ':' after else", elseColon);
+        }
+        elseBody = suite();
+    } else {
+        tokenizer.ungetToken();
+    }
+
+    return new IfStatement{std::move(branches), elseBody};
 }
 
 WhileStatement *Parser::whileStatement() {
@@ -369,22 +398,34 @@ ExprNode *Parser::arithPrimary() {
 ExprNode *Parser::postfixExpr(){ //unfinished
     //<postfix-expression> <atom> [ [ <rel-expr> ] ]
     ExprNode *atomToken = atom();
+
     Token openBrackToken = tokenizer.getToken();
+
     if (!openBrackToken.isOpenBracket()) {
-        die("Parser::postfixExpr", "expected '['", openBrackToken);
+        tokenizer.ungetToken();
+        return atomToken;
     }
-    ExprNode *expression = relExpr();
+
+    ExprNode *indexExpression = relExpr();
+
     Token closeBrackToken = tokenizer.getToken();
+
     if (!closeBrackToken.isCloseBracket()) {
-        delete expression;
-        die("Parser::postfixEcpr", "expected ']'", closeBrackToken);
+        delete atomToken;
+        delete indexExpression;
+        die("Parser::postfixExpr", "expected ']'", closeBrackToken);
     }
-    return atom;
+    return new SubscriptExpression{atomToken, indexExpression};
 }
 
 ExprNode *Parser::atom() { //missing list literal
     //<atom> -> <id> | <literal> | <list-literal> | <input-expression> | <one-argument-call> | (<rel-expr>)
     Token token = tokenizer.getToken();
+
+    if (token.isOpenBracket()) {
+        tokenizer.ungetToken();
+        return listLiteral();
+    }
 
     if (token.isInteger() || token.isDouble() || token.isTrueKeyword() || token.isFalseKeyword()
         || token.isString()) {
@@ -448,12 +489,12 @@ ExprNode *Parser::inputExpr(){
 
 ExprNode *Parser::oneArgCall() {
 
-    //try to reuse the parenthesis code for all 
+    //try to reuse the parenthesis code for all
     Token nameToken = tokenizer.getToken();
     if (!(nameToken.isIntKeyword() || nameToken.isFloatKeyword() || nameToken.isSTRKeyword() || nameToken.isLenKeyword() || nameToken.isSplitKeyword() || nameToken.isPopKeyword())) {
         die("Parser::oneArgCall", "expected 'int', 'float', 'str', 'len', 'split', or 'pop'", nameToken);
     }
-    
+
     Token openParen = tokenizer.getToken();
 
     if (!openParen.isOpenParen())
@@ -467,7 +508,7 @@ ExprNode *Parser::oneArgCall() {
         die("Parser::oneArgCall", "expected ')'", closeParen);
     }
     return oneArgExpr(nameToken, argument);
-    
+
 }
 
 ExprNode *Parser::oneArgExpr(Token token, ExprNode *argument) {
@@ -494,5 +535,35 @@ ExprNode *Parser::oneArgExpr(Token token, ExprNode *argument) {
 }
 
 ExprNode *Parser::listLiteral() {
+    Token openBracket = tokenizer.getToken();
 
+    if (!openBracket.isOpenBracket())
+        die("Parser::listLiteral", "expected '['", openBracket);
+
+    std::vector<ExprNode *> elements;
+    Token token = tokenizer.getToken();
+
+    if (token.isCloseBracket())
+        return new ListLiteral{std::move(elements)};
+
+    tokenizer.ungetToken();
+    elements.push_back(relExpr());
+
+    while (true) {
+        token = tokenizer.getToken();
+
+        if (!token.isComma())
+            break;
+
+        elements.push_back(relExpr());
+    }
+
+    if (!token.isCloseBracket()) {
+        for (ExprNode *element : elements) {
+            delete element;
+        }
+        die("Parser::listLiteral", "expected ',' or ']'", token);
+    }
+
+    return new ListLiteral{std::move(elements)};
 }

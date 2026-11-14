@@ -2,6 +2,9 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <regex>
+#include <cmath>
+#include <charconv>
 #include <iosfwd>
 #include "Expr.hpp"
 
@@ -268,6 +271,56 @@ ValueDescriptor * IntegerLiteral::evaluate(const SymbolTable &) const {
     return new IntegerValueDescriptor{token().integerValue()};
 }
 
+IntegerConversion::IntegerConversion(ExprNode *expression) : ExprNode{Token{}}, expression(expression) {}
+
+IntegerConversion::~IntegerConversion() {
+    delete expression;
+}
+
+void IntegerConversion::print() const {
+    std::cout << "int(";
+    expression->print();
+    std::cout << ")";
+}
+
+ValueDescriptor * IntegerConversion::evaluate(const SymbolTable &symbolTable) const {
+
+    ValueDescriptor *value = expression->evaluate(symbolTable);
+
+    if (value->type() == ValueDescriptor::Type::integer) {
+        return value;
+    }
+
+    if (value->type() == ValueDescriptor::Type::string) {
+        delete value;
+        throw std::runtime_error("int() requires an integer or string");
+    }
+    const std::string &text = dynamic_cast<StringValueDescriptor *>(value)->value();
+    std::string convertedText = text;
+
+    if (!convertedText.empty() && convertedText.front() == '+') {
+        convertedText.erase(0,1);
+    }
+
+    if (convertedText.empty()) {
+        delete value;
+        throw std::runtime_error("invalid integer conversion");
+    }
+
+    std::int64_t result{};
+    const char *begin = convertedText.data();
+    const char *end = begin + convertedText.size();
+
+    auto conversion = std::from_chars(begin, end, result);
+
+    if (conversion.ec != std::errc() || conversion.ptr != end) {
+        delete value;
+        throw std::runtime_error("invalid integer conversion" + text);
+    }
+    delete value;
+    return new IntegerValueDescriptor{result};
+}
+
 DoubleLiteral::DoubleLiteral(Token token) : ExprNode{std::move(token)} {}
 
 void DoubleLiteral::print() const {
@@ -414,3 +467,230 @@ void RangeExpression::print() const {
     }
     std::cout << " )";
 }
+
+ListLiteral::ListLiteral(std::vector<ExprNode *> elements) : ExprNode{Token{}}, elements{std::move(elements)} {}
+
+ListLiteral::~ListLiteral() {
+    for (ExprNode *element : elements) {
+        delete element;
+    }
+}
+
+void ListLiteral::print() const {
+    std::cout << "[";
+
+    for (std::size_t i = 0; i < elements.size(); i++) {
+        if (i != 0) {
+            std::cout << ",";
+        }
+        elements[i]->print();
+    }
+    std::cout << "]";
+}
+
+ValueDescriptor *ListLiteral::evaluate(const SymbolTable &) const {
+    throw std::runtime_error("not implemented");
+}
+
+SubscriptExpression::SubscriptExpression(ExprNode *listExpression, ExprNode *indexExpression) : ExprNode{Token{}},
+                                         listExpression{listExpression}, indexExpression{indexExpression} {}
+
+SubscriptExpression::~SubscriptExpression() {
+    delete listExpression;
+    delete indexExpression;
+}
+
+void SubscriptExpression::print() const {
+    listExpression->print();
+    std::cout << "[";
+    indexExpression->print();
+    std::cout << "]";
+}
+
+ValueDescriptor *SubscriptExpression::evaluate(const SymbolTable &) const {
+    throw std::runtime_error("not implemented");
+}
+
+FloatConversion::FloatConversion(ExprNode *expression) : ExprNode{Token{}}, expression{expression} {}
+
+FloatConversion::~FloatConversion() {
+    delete expression;
+}
+
+void FloatConversion::print() const {
+    std::cout << "float(";
+    expression->print();
+    std::cout << ")";
+}
+
+ValueDescriptor *FloatConversion::evaluate(const SymbolTable &symbolTable) const {
+    ValueDescriptor *value = expression->evaluate(symbolTable);
+
+    if (value->type() == ValueDescriptor::Type::doubleValue) {
+        return value;
+    }
+
+    if (value->type() == ValueDescriptor::Type::integer) {
+        double result = static_cast<double>(dynamic_cast<IntegerValueDescriptor *>(value)->value());
+        delete value;
+        return new DoubleValueDescriptor{result};
+    }
+
+    if (value->type() != ValueDescriptor::Type::string) {
+        delete value;
+        throw std::runtime_error("float() requires a number or string");
+    }
+
+    const std::string &text = dynamic_cast<StringValueDescriptor *>(value)->value();
+
+    static const std::regex validFloat{R"([+-]?[0-9]+(\.[0-9]+)?)"};
+
+    if (!std::regex_match(text, validFloat)) {
+        delete value;
+        throw std::runtime_error("invalid floating point conversion: " + text);
+    }
+
+    try {
+        double result = std::stod(text);
+
+        if (!std::isfinite(result)) {
+            delete value;
+            throw std::runtime_error("floating ppoint value is not finite");
+        }
+
+        delete value;
+        return new DoubleValueDescriptor{result};
+
+    } catch (const std::exception &) {
+        delete value;
+        throw std::runtime_error("invalid floating point conversion: " + text);
+    }
+}
+
+LengthConversion::LengthConversion(ExprNode *expression) : ExprNode(Token{}), expression{expression} {}
+
+LengthConversion::~LengthConversion() {
+    delete expression;
+}
+
+void LengthConversion::print() const {
+    std::cout << "len(";
+    expression->print();
+    std::cout << ")";
+}
+
+ValueDescriptor *LengthConversion::evaluate(const SymbolTable &symbolTable) const {
+
+    ValueDescriptor *value = expression->evaluate(symbolTable);
+
+    if (value->type() == ValueDescriptor::Type::string) {
+        auto *stringValue = dynamic_cast<StringValueDescriptor *>(value);
+        std::int64_t length = static_cast<std::int64_t>(stringValue->value().size());
+
+        delete value;
+        return new IntegerValueDescriptor{length};
+    }
+
+    if (value->type() == ValueDescriptor::Type::list) {
+        auto *listValue = dynamic_cast<ListValueDescriptor *>(value);
+        std::int64_t length = static_cast<std::int64_t>(listValue->object()->size());
+
+        delete value;
+        return new IntegerValueDescriptor{length};
+    }
+
+    delete value;
+    throw std::runtime_error("len() requires a string or list");
+}
+
+SplitConversion::SplitConversion(ExprNode *expression) : ExprNode{Token{}}, expression{expression} {}
+
+SplitConversion::~SplitConversion() {
+    delete expression;
+}
+
+void SplitConversion::print() const {
+    std::cout << "split(";
+    expression->print();
+    std::cout << ")";
+}
+
+ValueDescriptor *SplitConversion::evaluate(const SymbolTable &symbolTable) const {
+
+    ValueDescriptor *value = expression->evaluate(symbolTable);
+
+    if (value->type() != ValueDescriptor::Type::string) {
+        delete value;
+        throw std::runtime_error("split() requires a string");
+    }
+
+    std::string text = dynamic_cast<StringValueDescriptor *>(value)->value();
+
+    ListObject *object = new ListObject(ListElementType::string);
+
+    std::size_t start = 0;
+
+    while (start < text.size()) {
+        while (start < text.size() && (text[start] == ' ' || text[start] == '\t')) {
+            start++;
+        }
+
+        if (start == text.size()) {
+            break;
+        }
+
+        std::size_t end = start;
+
+        while (end < text.size() && (text[end] == ' ' || text[end] == '\t')) {
+            end++;
+        }
+        object->append(new StringValueDescriptor{text.substr(start, end - start)});
+        start = end;
+    }
+    delete value;
+    return new ListValueDescriptor{object};
+}
+
+PopConversion::PopConversion(ExprNode *expression) : ExprNode{Token{}}, expression{expression} {}
+
+PopConversion::~PopConversion() {
+    delete expression;
+}
+
+void PopConversion::print() const {
+    std::cout << "pop(";
+    expression->print();
+    std::cout << ")";
+}
+
+ValueDescriptor *PopConversion::evaluate(const SymbolTable &symbolTable) const {
+
+    ValueDescriptor *value = expression->evaluate(symbolTable);
+
+    if (value->type() == ValueDescriptor::Type::list) {
+        delete value;
+        throw std::runtime_error("pop() requires a list");
+    }
+
+    auto *listValue = dynamic_cast<ListValueDescriptor *>(value);
+
+    if (listValue->object()->size() == 0) {
+        delete value;
+        throw std::runtime_error("cannot pop from an empty list");
+    }
+
+    ValueDescriptor *result = listValue->object()->pop();
+    delete value;
+    return result;
+}
+
+
+
+
+
+
+
+
+
+
+

@@ -39,7 +39,7 @@ void AssignmentStatement::evaluate(SymbolTable &symbolTable) const {
 void AssignmentStatement::print() const {
     std::cout << variableName << " = ";
     expression->print();
-    std::cout << '\n';
+    std::cout << "\n";
 }
 
 void AssignmentStatement::otherPrint() const {
@@ -55,7 +55,7 @@ PrintStatement::~PrintStatement() {
 
 void PrintStatement::evaluate(SymbolTable &symbolTable) const {
     ValueDescriptor *value = expression->evaluate(symbolTable);
-    std::cout << value->toString() << '\n';
+    std::cout << value->toString() << "\n";
     delete value;
 }
 
@@ -124,3 +124,125 @@ void ForStatement::print() const {
     std::cout << " }\n";
 }
 */
+
+IfStatement::IfStatement(std::vector<IfBranch> branches, Statements *elseBody) : branches{std::move(branches)}, elseBody{elseBody} {}
+
+IfStatement::~IfStatement() {
+    for (IfBranch &branch : branches) {
+        delete branch.condition;
+        delete branch.body;
+    }
+    delete elseBody;
+}
+
+void IfStatement::evaluate(SymbolTable &symbolTable) const {
+    for (const IfBranch &branch : branches) {
+        ValueDescriptor *conditionValue = branch.condition->evaluate(symbolTable);
+
+        if (conditionValue->type() != ValueDescriptor::Type::boolean) {
+            delete conditionValue;
+            throw std::runtime_error("if condition must be Boolean");
+        }
+        bool conditionIsTrue = dynamic_cast<BooleanValueDescriptor *>(conditionValue)->value();
+
+        delete conditionValue;
+
+        if (conditionIsTrue) {
+            branch.body->evaluate(symbolTable);
+            return;
+        }
+    }
+    if (elseBody != nullptr)
+        elseBody->evaluate(symbolTable);
+}
+
+void IfStatement::print() const {
+    if (branches.empty())
+        return;
+
+    std::cout << "if ";
+    branches[0].condition->print();
+    std::cout << ":\n";
+    branches[0].body->print();
+
+    for (std::size_t i = 1; i < branches.size(); i++) {
+        std::cout << "elif ";
+        branches[i].condition->print();
+        std::cout << ":\n";
+        branches[i].body->print();
+    }
+
+    if (elseBody != nullptr) {
+        std::cout << "else:\n";
+        elseBody->print();
+    }
+}
+
+AppendStatement::AppendStatement(ExprNode *first, ExprNode *second) : right{second}, left{first} {}
+
+AppendStatement::~AppendStatement() {
+    delete left;
+    delete right;
+}
+
+void AppendStatement::evaluate(SymbolTable &symbolTable) const {
+
+    ValueDescriptor *listValue = left->evaluate(symbolTable);
+    ValueDescriptor *elementValue = right->evaluate(symbolTable);
+
+    if (listValue->type() != ValueDescriptor::Type::list) {
+
+        delete listValue;
+        delete elementValue;
+
+        throw std::runtime_error("append() requires a list");
+    }
+
+    auto *list = dynamic_cast<ListValueDescriptor *>(listValue);
+
+    list->object()->append(elementValue);
+    delete listValue;
+}
+
+void AppendStatement::print() const {
+    std::cout << "append(";
+    left->print();
+    std::cout << ", ";
+    right->print();
+    std::cout << ")\n";
+}
+
+WhileStatement::WhileStatement(ExprNode *condition, Statements *body) : condition{condition}, body{body} {}
+
+WhileStatement::~WhileStatement() {
+    delete condition;
+    delete body;
+}
+
+void WhileStatement::evaluate(SymbolTable &symbolTable) const {
+
+    while (true) {
+        ValueDescriptor *value = condition->evaluate(symbolTable);
+
+        if (value->type() != ValueDescriptor::Type::boolean) {
+            delete value;
+            throw std::runtime_error("while condition must be Boolean");
+        }
+
+        bool isTrue = dynamic_cast<BooleanValueDescriptor *>(value)->value();
+        delete value;
+
+        if (!isTrue) {
+            return;
+        }
+
+        body->evaluate(symbolTable);
+    }
+}
+
+void WhileStatement::print() const {
+    std::cout << "while ";
+    condition->print();
+    std::cout << ":\n";
+    body->print();
+}
